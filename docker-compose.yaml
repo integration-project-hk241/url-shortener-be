@@ -1,0 +1,12 @@
+  mysql:
+    image: mysql
+    container_name: mysql-db
+    restart: no
+    volumes:
+      - mysql:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - ecommerce-net
+    environment:
+      MYSQL_ROOT_PASSWORD: root
