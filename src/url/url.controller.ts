@@ -7,7 +7,7 @@ import { Response } from 'express';
 export class UrlController {
   constructor(private readonly urlService: UrlService) {}
 
-  @Post('shorten')
+  @Post('urls')
   shortenUrl(@Body() url: CreateUrlDto) {
     return this.urlService.createShortUrl(url);
   }
