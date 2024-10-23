@@ -10,5 +10,5 @@ services:
       environment:
         MYSQL_ROOT_PASSWORD: root
 
- volumes:
-   mysql: 
+volumes:
+  mysql: 
