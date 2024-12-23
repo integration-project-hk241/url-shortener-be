@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class IntrospectTokenRequest {
+public class RefreshTokenRequest {
     @NotBlank(message = "Token is required")
     private String token;
 }

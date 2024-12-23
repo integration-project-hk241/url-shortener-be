@@ -33,7 +33,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AppException.class)
     ResponseEntity<Response<Void>> handleAppException(AppException ex) {
-        log.error("AppException: {}", ex.toString());
         ErrorCode errorCode = ex.getErrorCode();
 
         ErrorResponse errorResponse = ErrorResponse.builder()

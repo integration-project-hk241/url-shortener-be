@@ -1,35 +1,27 @@
 package org.url.urlshortenerbe.services;
 
 import java.text.ParseException;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.StringJoiner;
-import java.util.stream.Collectors;
 
 import jakarta.validation.Valid;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.url.urlshortenerbe.dtos.requests.AuthenticationRequest;
 import org.url.urlshortenerbe.dtos.requests.IntrospectTokenRequest;
+import org.url.urlshortenerbe.dtos.requests.RefreshTokenRequest;
+import org.url.urlshortenerbe.dtos.requests.RevokeTokenRequest;
 import org.url.urlshortenerbe.dtos.responses.AuthenticationResponse;
 import org.url.urlshortenerbe.dtos.responses.IntrospectTokenResponse;
-import org.url.urlshortenerbe.dtos.responses.UserResponse;
+import org.url.urlshortenerbe.entities.RevokedToken;
 import org.url.urlshortenerbe.entities.User;
 import org.url.urlshortenerbe.exceptions.AppException;
 import org.url.urlshortenerbe.exceptions.ErrorCode;
-import org.url.urlshortenerbe.mappers.RoleMapper;
-import org.url.urlshortenerbe.mappers.UserMapper;
+import org.url.urlshortenerbe.repositories.RevokedTokenRepository;
 import org.url.urlshortenerbe.repositories.UserRepository;
+import org.url.urlshortenerbe.utils.JwtUtil;
 
 import com.nimbusds.jose.*;
-import com.nimbusds.jose.crypto.MACSigner;
-import com.nimbusds.jose.crypto.MACVerifier;
-import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 import lombok.RequiredArgsConstructor;
@@ -40,17 +32,15 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AuthenticationService {
     private final UserRepository userRepository;
+    private final RevokedTokenRepository revokedTokenRepository;
+
     private final PasswordEncoder passwordEncoder;
 
-    private final UserMapper userMapper;
-    private final RoleMapper roleMapper;
-
-    @Value("${jwt.signer-key}")
-    protected String SIGNER_KEY;
+    private final JwtUtil jwtUtil;
 
     public AuthenticationResponse authenticate(AuthenticationRequest authenticationRequest) {
         User user = userRepository
-                .findByUsername(authenticationRequest.getUsername())
+                .findByEmail(authenticationRequest.getEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOTFOUND));
 
         boolean authenticated = passwordEncoder.matches(authenticationRequest.getPassword(), user.getPassword());
@@ -59,112 +49,60 @@ public class AuthenticationService {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
-        String token = generateToken(user);
+        String token = jwtUtil.generateToken(user);
 
         return AuthenticationResponse.builder().token(token).build();
     }
 
-    public IntrospectTokenResponse introspectToken(@Valid IntrospectTokenRequest introspectTokenRequest) {
-        String token = introspectTokenRequest.getToken();
+    public IntrospectTokenResponse introspectToken(@Valid IntrospectTokenRequest introspectTokenRequest)
+            throws ParseException, JOSEException {
+        boolean isValid = true;
 
-        JWSVerifier verifier = null;
         try {
-            verifier = new MACVerifier(SIGNER_KEY.getBytes());
-        } catch (JOSEException e) {
-            // todo: handle this later
-            log.error("JWT verification failed", e);
-            throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
+            jwtUtil.verifyJWT(introspectTokenRequest.getToken(), false);
+        } catch (AppException e) {
+            isValid = false;
         }
-
-        SignedJWT signedJWT = null;
-        try {
-            signedJWT = SignedJWT.parse(token);
-        } catch (ParseException e) {
-            // todo: handle this later
-            log.error("JWT verification failed", e);
-            throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
-        }
-
-        Date expiryTime = null;
-        try {
-            expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
-        } catch (ParseException e) {
-            // todo: handle this later
-            log.error("JWT verification failed", e);
-            throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
-        }
-
-        boolean isNotExpired = expiryTime.after(new Date());
-
-        boolean isVerified = false;
-        try {
-            isVerified = signedJWT.verify(verifier);
-        } catch (JOSEException e) {
-            // todo: handle this later
-            log.error("JWT verification failed", e);
-            throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
-        }
-
-        // if not expired and is verified
-        boolean isValid = isNotExpired && isVerified;
 
         return IntrospectTokenResponse.builder().isValid(isValid).build();
     }
 
-    private String generateToken(User user) {
-        JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS512);
-
-        JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
-                .subject(user.getUsername())
-                .issuer("phankhai5004.com")
-                .issueTime(new Date())
-                .expirationTime(new Date(Instant.now().plus(1, ChronoUnit.HOURS).toEpochMilli()))
-                .claim("scope", buildScope(user))
-                .build();
-
-        Payload payload = new Payload(jwtClaimsSet.toJSONObject());
-
-        JWSObject jwsObject = new JWSObject(jwsHeader, payload);
-
+    public void revokeToken(RevokeTokenRequest revokeTokenRequest) {
+        // When revoke a token if it is not valid then we don't need to care about it
+        // If it is valid then revoke it
         try {
-            jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));
-        } catch (JOSEException e) {
-            log.error("Could not sign JWT", e);
-            throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
-        }
+            SignedJWT signedJWT = jwtUtil.verifyJWT(revokeTokenRequest.getToken(), true);
 
-        return jwsObject.serialize();
+            String jit = signedJWT.getJWTClaimsSet().getJWTID();
+            Date expiryDate = signedJWT.getJWTClaimsSet().getExpirationTime();
+
+            revokedTokenRepository.save(
+                    RevokedToken.builder().id(jit).expiryDate(expiryDate).build());
+
+        } catch (Exception e) {
+        }
     }
 
-    private String buildScope(User user) {
-        StringJoiner scopeJoiner = new StringJoiner(" ");
+    public AuthenticationResponse refreshToken(RefreshTokenRequest refreshTokenRequest)
+            throws ParseException, JOSEException {
+        // Revoke the old token
+        SignedJWT signedJWT = jwtUtil.verifyJWT(refreshTokenRequest.getToken(), true);
 
-        if (!(user.getRoles().isEmpty())) {
-            user.getRoles().forEach(role -> {
-                scopeJoiner.add(role.getName());
+        String jit = signedJWT.getJWTClaimsSet().getJWTID();
+        Date expiryDate = signedJWT.getJWTClaimsSet().getExpirationTime();
 
-                if (!role.getPermissions().isEmpty()) {
-                    role.getPermissions().forEach(permission -> scopeJoiner.add(permission.getName()));
-                }
-            });
-        }
+        RevokedToken revokedToken =
+                RevokedToken.builder().id(jit).expiryDate(expiryDate).build();
 
-        return scopeJoiner.toString();
-    }
+        revokedTokenRepository.save(revokedToken);
 
-    public UserResponse getCurrentUser() {
-        SecurityContext securityContext = SecurityContextHolder.getContext();
-        String username = securityContext.getAuthentication().getName();
-
+        // Issue new token
+        String username = signedJWT.getJWTClaimsSet().getSubject();
         User user =
-                userRepository.findByUsername(username).orElseThrow(() -> new AppException(ErrorCode.USER_NOTFOUND));
+                userRepository.findByEmail(username).orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
 
-        UserResponse userResponse = userMapper.toUserResponse(user);
+        String token = jwtUtil.generateToken(user);
 
-        // map roles of each user
-        userResponse.setRoles(
-                user.getRoles().stream().map(roleMapper::toRoleResponse).collect(Collectors.toSet()));
-
-        return userResponse;
+        return AuthenticationResponse.builder().token(token).build();
     }
 }

@@ -44,6 +44,14 @@ public class UserController {
                 .build();
     }
 
+    @GetMapping("/me")
+    public Response<UserResponse> getCurrentUser() {
+        return Response.<UserResponse>builder()
+                .success(true)
+                .data(userService.getCurrentUser())
+                .build();
+    }
+
     @PutMapping("/{userId}")
     Response<UserResponse> update(
             @PathVariable("userId") String userId, @RequestBody @Valid UserUpdateRequest userUpdateRequest) {

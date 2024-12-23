@@ -5,9 +5,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.url.urlshortenerbe.dtos.requests.UserCreationRequest;
@@ -42,7 +45,7 @@ public class UserService {
 
     public UserResponse create(UserCreationRequest userCreationRequest) {
         // validate the username first
-        if (userRepository.existsByUsername(userCreationRequest.getUsername())) {
+        if (userRepository.existsByEmail(userCreationRequest.getEmail())) {
             throw new AppException(ErrorCode.USER_EXISTED);
         }
 
@@ -60,7 +63,11 @@ public class UserService {
         user.setRoles(roles);
 
         // Save new user to database
-        user = userRepository.save(user);
+        try{
+            user = userRepository.save(user);
+        } catch (DataIntegrityViolationException e){
+            throw new AppException(ErrorCode.USER_EXISTED);
+        }
 
         UserResponse userResponse = userMapper.toUserResponse(user);
         userResponse.setRoles(roles.stream().map(roleMapper::toRoleResponse).collect(Collectors.toSet()));
@@ -120,6 +127,22 @@ public class UserService {
                     return roleResponse;
                 })
                 .collect(Collectors.toSet()));
+
+        return userResponse;
+    }
+
+    public UserResponse getCurrentUser() {
+        SecurityContext securityContext = SecurityContextHolder.getContext();
+        String username = securityContext.getAuthentication().getName();
+
+        User user =
+                userRepository.findByEmail(username).orElseThrow(() -> new AppException(ErrorCode.USER_NOTFOUND));
+
+        UserResponse userResponse = userMapper.toUserResponse(user);
+
+        // map roles of each user
+        userResponse.setRoles(
+                user.getRoles().stream().map(roleMapper::toRoleResponse).collect(Collectors.toSet()));
 
         return userResponse;
     }

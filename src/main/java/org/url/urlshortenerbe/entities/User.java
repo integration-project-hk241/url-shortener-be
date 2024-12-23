@@ -12,15 +12,21 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@ToString
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    private String username;
+    @Column(unique = true, columnDefinition = "VARCHAR(255) COLLATE utf8mb4_unicode_ci")
+    private String email;
+
+    @Column(nullable = false)
     private String password;
+
+    @Column(nullable = false)
     private String firstName;
+
+    @Column(nullable = false)
     private String lastName;
 
     @OneToMany

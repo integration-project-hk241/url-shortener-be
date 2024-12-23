@@ -5,8 +5,8 @@ import java.util.Set;
 
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
 import org.url.urlshortenerbe.entities.Permission;
 import org.url.urlshortenerbe.entities.Role;
 import org.url.urlshortenerbe.entities.User;
@@ -18,7 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Configuration
+@Component
 @RequiredArgsConstructor
 public class Boostrap {
     private final UserRepository userRepository;
@@ -77,9 +77,9 @@ public class Boostrap {
             // Save user role
             roleRepository.save(userRole);
 
-            if (userRepository.findByUsername("admin").isEmpty()) {
+            if (userRepository.findByEmail("admin@admin.com").isEmpty()) {
                 User user = User.builder()
-                        .username("admin")
+                        .email("admin@admin.com")
                         .password(passwordEncoder.encode("admin"))
                         .roles(Set.of(adminRole))
                         .firstName("admin")
