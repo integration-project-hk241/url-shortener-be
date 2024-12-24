@@ -13,7 +13,7 @@ import org.url.urlshortenerbe.services.RoleService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/roles")
+@RequestMapping("${api.prefix}/roles")
 @RequiredArgsConstructor
 public class RoleController {
     private final RoleService roleService;

@@ -11,7 +11,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class IntrospectTokenRequest {
-    @NotBlank(message = "Token is required")
-    private String token;
+public class UrlCreationRequest {
+    @NotBlank(message = "Url is required to shorten")
+    private String longUrl;
+
+    private String alias;
 }

@@ -63,9 +63,9 @@ public class UserService {
         user.setRoles(roles);
 
         // Save new user to database
-        try{
+        try {
             user = userRepository.save(user);
-        } catch (DataIntegrityViolationException e){
+        } catch (DataIntegrityViolationException e) {
             throw new AppException(ErrorCode.USER_EXISTED);
         }
 
@@ -135,8 +135,7 @@ public class UserService {
         SecurityContext securityContext = SecurityContextHolder.getContext();
         String username = securityContext.getAuthentication().getName();
 
-        User user =
-                userRepository.findByEmail(username).orElseThrow(() -> new AppException(ErrorCode.USER_NOTFOUND));
+        User user = userRepository.findByEmail(username).orElseThrow(() -> new AppException(ErrorCode.USER_NOTFOUND));
 
         UserResponse userResponse = userMapper.toUserResponse(user);
 

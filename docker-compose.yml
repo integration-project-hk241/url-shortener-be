@@ -1,20 +1,32 @@
 services:
-  db:
-    image: mysql:latest
-    container_name: mysql-db
-    restart: always
-    volumes:
-      - mysql:/var/lib/mysql
+  springboot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: springboot_container
     ports:
-      - "3306:3306"
-    networks:
-      - url-net
+      - 8080:8080
     environment:
-      MYSQL_ROOT_PASSWORD: root
-
-volumes:
-  mysql:
-
-networks:
-  url-net:
-    driver: bridge
+      SPRING_DATASOURCE_URL: postgresql://autorack.proxy.rlwy.net:25638/railway
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: gmWnJFvKHzdYvPPjXKDLuDTYCAVLlZos
+#services:
+#  db:
+#    image: mysql:latest
+#    container_name: mysql-db
+#    restart: always
+#    volumes:
+#      - mysql:/var/lib/mysql
+#    ports:
+#      - "3306:3306"
+#    networks:
+#      - url-net
+#    environment:
+#      MYSQL_ROOT_PASSWORD: root
+#
+#volumes:
+#  mysql:
+#
+#networks:
+#  url-net:
+#    driver: bridge

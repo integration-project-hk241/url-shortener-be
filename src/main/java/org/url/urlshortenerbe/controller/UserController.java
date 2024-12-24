@@ -13,7 +13,7 @@ import org.url.urlshortenerbe.services.UserService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping("${api.prefix}/users")
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
