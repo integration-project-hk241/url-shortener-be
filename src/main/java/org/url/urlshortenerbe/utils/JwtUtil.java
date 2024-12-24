@@ -92,7 +92,7 @@ public class JwtUtil {
 
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
                 .subject(user.getEmail())
-//                .issuer("phankhai5004.com")
+                //                .issuer("phankhai5004.com")
                 .issueTime(new Date())
                 .expirationTime(new Date(
                         Instant.now().plus(EXPIRATION_TIME, ChronoUnit.SECONDS).toEpochMilli()))

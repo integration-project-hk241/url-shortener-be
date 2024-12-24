@@ -98,8 +98,7 @@ public class AuthenticationService {
 
         // Issue new token
         String username = signedJWT.getJWTClaimsSet().getSubject();
-        User user =
-                userRepository.findByEmail(username).orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
+        User user = userRepository.findByEmail(username).orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
 
         String token = jwtUtil.generateToken(user);
 

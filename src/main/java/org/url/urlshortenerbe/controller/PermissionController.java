@@ -13,7 +13,7 @@ import org.url.urlshortenerbe.services.PermissionService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/permissions")
+@RequestMapping("${api.prefix}/permissions")
 @RequiredArgsConstructor
 public class PermissionController {
     private final PermissionService permissionService;

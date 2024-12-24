@@ -1,7 +1,6 @@
 package org.url.urlshortenerbe.configs;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -13,32 +12,34 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
-
-import lombok.RequiredArgsConstructor;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
+
+import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor(onConstructor_ = {@Autowired})
 public class SecurityConfiguration {
+    private static final String API_PREFIX = "/api";
+
     private final CustomJwtDecoder customJwtDecoder;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     private final String[] PUBLIC_ENDPOINTS = {
         // Allows to create user (register) for everyone
-        "/users",
+        API_PREFIX + "/users",
 
         // Allow login (get token) and introspect token
-        "/auth/token",
-        "/auth/introspect",
-        "/auth/revoke",
-        "/auth/refresh"
-    };
+        API_PREFIX + "/auth/token",
+        API_PREFIX + "/auth/introspect",
+        API_PREFIX + "/auth/revoke",
+        API_PREFIX + "/auth/refresh",
 
-    @Value("${jwt.signer-key}")
-    private String signerKey;
+        // Allow url origin
+        API_PREFIX + "/urls"
+    };
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
@@ -50,6 +51,10 @@ public class SecurityConfiguration {
                 // Allow only Admin
                 .requestMatchers(HttpMethod.GET, "/users")
                 .hasRole("ADMIN")
+
+                // Allow normal users to get the link
+                .requestMatchers(HttpMethod.GET, "/{shortUrl}")
+                .permitAll()
 
                 // any other requests must be authenticated
                 .anyRequest()
@@ -88,7 +93,7 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    public CorsFilter corsFilter(){
+    public CorsFilter corsFilter() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
 
         corsConfiguration.addAllowedOrigin("*");

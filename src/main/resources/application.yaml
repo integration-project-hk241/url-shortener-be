@@ -1,7 +1,5 @@
 server:
   port: 8080
-  servlet:
-    context-path: /api
 
 spring:
   application:
@@ -18,5 +16,12 @@ spring:
 
 jwt:
   signer-key: ZpVU2+KjVQEFSU6NgV9+2SRzhT5YuIsXMDgTbDcrf3Y7O+W/bYzhDwVzZSOviQwdnzGMK91zo6tAsoS+px3lkJluXeMLr0MnbhWAx7KelaI=
-  expiration-time: 30 #second
+  expiration-time: 120 #second
   refresh_time: 12000 #second
+
+url:
+  length: 6 #characters
+  expiration-time: 7 #days
+
+api:
+  prefix: /api
