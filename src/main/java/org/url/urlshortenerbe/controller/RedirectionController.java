@@ -1,7 +1,9 @@
 package org.url.urlshortenerbe.controller;
 
 import java.net.URI;
+import java.util.Optional;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,8 +24,9 @@ public class RedirectionController {
     @GetMapping("/{shortUrl}")
     public ResponseEntity<?> redirect(
             @PathVariable String shortUrl,
-            @RequestHeader("Referer") String referer,
-            @RequestHeader("User-Agent") String userAgent) {
+            @RequestHeader("Referer") Optional<String> referer,
+            @RequestHeader(HttpHeaders.USER_AGENT) String userAgent) {
+
         String longUrl = redirectionService.getUrlAndCountClick(shortUrl, referer, userAgent);
 
         return ResponseEntity.status(HttpStatus.MOVED_PERMANENTLY)
