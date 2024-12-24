@@ -2,7 +2,7 @@ FROM eclipse-temurin:17-jdk-jammy AS builder
 
 WORKDIR /app
 
-COPY pom.xml
+COPY pom.xml ./
 COPY src ./src
 
 COPY mvnw ./
