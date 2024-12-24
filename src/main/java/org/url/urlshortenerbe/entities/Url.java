@@ -28,8 +28,6 @@ public class Url {
     @Column(nullable = false)
     private Date expiresAt;
 
-    private Date lastVisit;
-
     @ManyToOne
     private User user;
 }

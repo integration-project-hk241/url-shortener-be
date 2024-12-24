@@ -73,10 +73,8 @@ public class UrlService {
         url.setShortUrl(shortUrl);
         url.setCreatedAt(Date.from(Instant.now()));
         url.setExpiresAt(Date.from(Instant.now().plus(expirationTime, ChronoUnit.DAYS)));
-        url.setLastVisit(null);
 
         // Find the user if the current is not guest
-
         SecurityContext securityContext = SecurityContextHolder.getContext();
         String email = securityContext.getAuthentication().getName();
         if (!email.equals("anonymousUser")) {

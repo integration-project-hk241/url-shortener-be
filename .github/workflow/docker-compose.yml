@@ -1,0 +1,50 @@
+name: Docker Compose CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository code
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Step 2: Set up Docker (install Docker Compose)
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v2
+        with:
+          version: 'latest'
+
+      # Step 3: Install Docker Compose (if not already available)
+      - name: Install Docker Compose
+        run: |
+          curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          chmod +x /usr/local/bin/docker-compose
+
+      # Step 4: Build and start the services defined in the docker-compose.yml file
+      - name: Run Docker Compose up
+        run: |
+          docker-compose -f compose.yaml up -d
+
+      # Step 5: Wait for the services to be ready (if needed)
+      - name: Wait for Spring Boot app to be ready
+        run: |
+          sleep 30 # Wait for 30 seconds for services to be fully initialized
+
+      # Step 6: Run tests or check if the app is running
+      #      - name: Test Spring Boot application
+      #        run: |
+      #          curl --fail http://localhost:8080 || exit 1
+
+      # Step 7: Tear down the Docker Compose services after testing
+      - name: Stop Docker Compose
+        run: |
+          docker-compose -f compose.yaml down
