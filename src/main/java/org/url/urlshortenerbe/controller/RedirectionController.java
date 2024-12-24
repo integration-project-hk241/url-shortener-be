@@ -24,7 +24,7 @@ public class RedirectionController {
     @GetMapping("/{shortUrl}")
     public ResponseEntity<?> redirect(
             @PathVariable String shortUrl,
-            @RequestHeader("Referer") Optional<String> referer,
+            @RequestHeader(HttpHeaders.REFERER) Optional<String> referer,
             @RequestHeader(HttpHeaders.USER_AGENT) String userAgent) {
 
         String longUrl = redirectionService.getUrlAndCountClick(shortUrl, referer, userAgent);

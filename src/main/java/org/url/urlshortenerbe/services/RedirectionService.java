@@ -26,7 +26,7 @@ public class RedirectionService {
         Click click = Click.builder()
                 .clickedAt(Date.from(Instant.now()))
                 .userAgent(userAgent)
-                .platform(referer.orElse(null))
+                .platform(referer.orElse("Other"))
                 .url(url)
                 .build();
 
