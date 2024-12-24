@@ -5,9 +5,9 @@ spring:
   application:
     name: url-shortener-be
   datasource:
-    username: ${SPRING_DATASOURCE_USERNAME:root}
-    password: ${SPRING_DATASOURCE_PASSWORD:root}
-    url: ${SPRING_DATASOURCE_URL:"jdbc://localhost:3306/url"}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    url: ${SPRING_DATASOURCE_URL}
   jpa:
     hibernate:
       ddl-auto: update
