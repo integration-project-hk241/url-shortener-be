@@ -14,16 +14,16 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class UrlResponse {
-    private String shortUrl;
+public class CampaignResponse {
+    private String id;
 
-    private String longUrl;
+    private String name;
 
-    private Date createdAt;
+    private Date startDate;
 
-    private Date expiresAt;
+    private Date endDate;
+
+    private String description;
 
     private String userId;
-
-    private String campaignId;
 }

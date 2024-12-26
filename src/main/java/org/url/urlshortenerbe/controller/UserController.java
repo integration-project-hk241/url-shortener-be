@@ -19,7 +19,7 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
-    Response<UserResponse> create(@RequestBody @Valid UserCreationRequest userCreationRequest) {
+    public Response<UserResponse> create(@RequestBody @Valid UserCreationRequest userCreationRequest) {
         return Response.<UserResponse>builder()
                 .success(true)
                 .data(userService.create(userCreationRequest))
@@ -27,7 +27,7 @@ public class UserController {
     }
 
     @GetMapping
-    Response<PageResponse<UserResponse>> getAll(
+    public Response<PageResponse<UserResponse>> getAll(
             @RequestParam(defaultValue = "1", required = false) int page,
             @RequestParam(defaultValue = "10", required = false) int size) {
         return Response.<PageResponse<UserResponse>>builder()
@@ -37,7 +37,7 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    Response<UserResponse> getOne(@PathVariable("userId") String userId) {
+    public Response<UserResponse> getOne(@PathVariable("userId") String userId) {
         return Response.<UserResponse>builder()
                 .success(true)
                 .data(userService.getOne(userId))
@@ -53,7 +53,7 @@ public class UserController {
     }
 
     @PutMapping("/{userId}")
-    Response<UserResponse> update(
+    public Response<UserResponse> update(
             @PathVariable("userId") String userId, @RequestBody @Valid UserUpdateRequest userUpdateRequest) {
         return Response.<UserResponse>builder()
                 .success(true)
@@ -62,9 +62,12 @@ public class UserController {
     }
 
     @DeleteMapping("/{userId}")
-    Response<Void> delete(@PathVariable("userId") String userId) {
+    public Response<Void> delete(@PathVariable("userId") String userId) {
         userService.delete(userId);
 
         return Response.<Void>builder().success(true).build();
     }
+
+    // CAMPAIGN
+
 }

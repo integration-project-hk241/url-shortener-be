@@ -6,10 +6,7 @@ import java.util.Optional;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.url.urlshortenerbe.services.RedirectionService;
 import org.url.urlshortenerbe.services.UrlService;
 
@@ -25,9 +22,10 @@ public class RedirectionController {
     public ResponseEntity<?> redirect(
             @PathVariable String shortUrl,
             @RequestHeader(HttpHeaders.REFERER) Optional<String> referer,
-            @RequestHeader(HttpHeaders.USER_AGENT) String userAgent) {
+            @RequestHeader(HttpHeaders.USER_AGENT) String userAgent,
+            @RequestParam(defaultValue = "Others", required = false, value = "r") String refererHeader) {
 
-        String longUrl = redirectionService.getUrlAndCountClick(shortUrl, referer, userAgent);
+        String longUrl = redirectionService.getUrlAndCountClick(shortUrl, referer.orElse(refererHeader), userAgent);
 
         return ResponseEntity.status(HttpStatus.MOVED_PERMANENTLY)
                 .location(URI.create(longUrl))

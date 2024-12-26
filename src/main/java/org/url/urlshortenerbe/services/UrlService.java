@@ -19,11 +19,13 @@ import org.url.urlshortenerbe.dtos.requests.UrlCreationRequest;
 import org.url.urlshortenerbe.dtos.requests.UrlUpdateRequest;
 import org.url.urlshortenerbe.dtos.responses.PageResponse;
 import org.url.urlshortenerbe.dtos.responses.UrlResponse;
+import org.url.urlshortenerbe.entities.Campaign;
 import org.url.urlshortenerbe.entities.Url;
 import org.url.urlshortenerbe.entities.User;
 import org.url.urlshortenerbe.exceptions.AppException;
 import org.url.urlshortenerbe.exceptions.ErrorCode;
 import org.url.urlshortenerbe.mappers.UrlMapper;
+import org.url.urlshortenerbe.repositories.CampaignRepository;
 import org.url.urlshortenerbe.repositories.UrlRepository;
 import org.url.urlshortenerbe.repositories.UserRepository;
 import org.url.urlshortenerbe.utils.Base62Encoder;
@@ -43,6 +45,7 @@ public class UrlService {
 
     private final UrlRepository urlRepository;
     private final UserRepository userRepository;
+    private final CampaignRepository campaignRepository;
 
     private final UrlMapper urlMapper;
 
@@ -90,6 +93,79 @@ public class UrlService {
         return urlMapper.toUrlResponse(url);
     }
 
+    public UrlResponse createWithUserId(String userId, UrlCreationRequest urlCreationRequest)
+            throws NoSuchAlgorithmException {
+        User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOTFOUND));
+
+        Url url = urlMapper.toUrl(urlCreationRequest);
+
+        String shortUrl;
+
+        // If the user want to custom the alias
+        if (urlCreationRequest.getAlias() != null) {
+            shortUrl = urlCreationRequest.getAlias();
+
+            if (urlRepository.existsById(shortUrl)) {
+                throw new AppException(ErrorCode.ALIAS_EXISTED);
+            }
+        } else {
+            shortUrl = generateHash(url.getLongUrl());
+
+            // Handle potential collisions
+            while (urlRepository.existsById(shortUrl)) {
+                shortUrl = generateHash(shortUrl);
+            }
+        }
+
+        url.setShortUrl(shortUrl);
+        url.setCreatedAt(Date.from(Instant.now()));
+        url.setExpiresAt(Date.from(Instant.now().plus(expirationTime, ChronoUnit.DAYS)));
+
+        url.setUser(user);
+
+        url = urlRepository.save(url);
+
+        return urlMapper.toUrlResponse(url);
+    }
+
+    public UrlResponse createWithCampaignIdAndUserId(
+            String campaignId, String userId, UrlCreationRequest urlCreationRequest) throws NoSuchAlgorithmException {
+        User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOTFOUND));
+        Campaign campaign = campaignRepository
+                .findById(campaignId)
+                .orElseThrow(() -> new AppException(ErrorCode.CAMPAIGN_NOTFOUND));
+
+        Url url = urlMapper.toUrl(urlCreationRequest);
+
+        String shortUrl;
+
+        // If the user want to custom the alias
+        if (urlCreationRequest.getAlias() != null) {
+            shortUrl = urlCreationRequest.getAlias();
+
+            if (urlRepository.existsById(shortUrl)) {
+                throw new AppException(ErrorCode.ALIAS_EXISTED);
+            }
+        } else {
+            shortUrl = generateHash(url.getLongUrl());
+
+            // Handle potential collisions
+            while (urlRepository.existsById(shortUrl)) {
+                shortUrl = generateHash(shortUrl);
+            }
+        }
+
+        url.setShortUrl(shortUrl);
+        url.setCreatedAt(Date.from(Instant.now()));
+        url.setExpiresAt(Date.from(Instant.now().plus(expirationTime, ChronoUnit.DAYS)));
+        url.setUser(user);
+        url.setCampaign(campaign);
+
+        url = urlRepository.save(url);
+
+        return urlMapper.toUrlResponse(url);
+    }
+
     public PageResponse<UrlResponse> getAll(int page, int size) {
         Pageable pageable = PageRequest.of(page - 1, size);
         Page<Url> urls = urlRepository.findAll(pageable);
@@ -105,22 +181,147 @@ public class UrlService {
                 .build();
     }
 
+    public PageResponse<UrlResponse> getAllByUserId(String userId, int page, int size) {
+        if (!userRepository.existsById(userId)) {
+            throw new AppException(ErrorCode.USER_NOTFOUND);
+        }
+
+        Pageable pageable = PageRequest.of(page - 1, size);
+
+        Page<Url> urls = urlRepository.findAllByUserId(userId, pageable);
+
+        List<UrlResponse> urlResponseList = urls.getContent().stream()
+                .map((url) -> {
+                    UrlResponse urlResponse = urlMapper.toUrlResponse(url);
+                    urlResponse.setUserId(null);
+                    urlResponse.setCampaignId(null);
+                    return urlResponse;
+                })
+                .toList();
+
+        return PageResponse.<UrlResponse>builder()
+                .items(urlResponseList)
+                .page(page)
+                .records(urls.getTotalElements())
+                .totalPages(urls.getTotalPages())
+                .build();
+    }
+
+    public PageResponse<UrlResponse> getAllByCampaignIdAndUserId(String campaignId, String userId, int page, int size) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+
+        Page<Url> urls = urlRepository.findAllByCampaignIdAndUserId(campaignId, userId, pageable);
+
+        List<UrlResponse> urlResponseList = urls.getContent().stream()
+                .map((url) -> {
+                    UrlResponse urlResponse = urlMapper.toUrlResponse(url);
+                    urlResponse.setCampaignId(null);
+                    urlResponse.setUserId(null);
+                    return urlResponse;
+                })
+                .toList();
+
+        return PageResponse.<UrlResponse>builder()
+                .items(urlResponseList)
+                .page(page)
+                .records(urls.getTotalElements())
+                .totalPages(urls.getTotalPages())
+                .build();
+    }
+
     public UrlResponse getOne(String shortUrl) {
         Url url = getUrlById(shortUrl);
 
         return urlMapper.toUrlResponse(url);
     }
 
-    public UrlResponse update(String shortUrl, UrlUpdateRequest urlUpdateRequest) {
-        if (urlRepository.existsById(shortUrl)) {
-            throw new AppException(ErrorCode.ALIAS_EXISTED);
+    public UrlResponse getOneByIdAndUserId(String shortUrl, String userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new AppException(ErrorCode.USER_NOTFOUND);
         }
 
+        Url url = urlRepository
+                .findByShortUrlAndUserId(shortUrl, userId)
+                .orElseThrow(() -> new AppException(ErrorCode.URL_NOTFOUND));
+
+        // set these 2 to null because we all know its user id and campaign id in the request already
+        url.setUser(null);
+        url.setCampaign(null);
+
+        return urlMapper.toUrlResponse(url);
+    }
+
+    public UrlResponse getOneByIdAndCampaignIdAndUserId(String shortUrl, String campaignId, String userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new AppException(ErrorCode.USER_NOTFOUND);
+        }
+
+        if (!campaignRepository.existsByIdAndUserId(campaignId, userId)) {
+            throw new AppException(ErrorCode.CAMPAIGN_NOTFOUND);
+        }
+
+        Url url = urlRepository
+                .findByShortUrlAndCampaignIdAndUserId(shortUrl, campaignId, userId)
+                .orElseThrow(() -> new AppException(ErrorCode.URL_NOTFOUND));
+
+        // set these 2 to null because we all know its user id and campaign id in the request already
+        url.setUser(null);
+        url.setCampaign(null);
+
+        return urlMapper.toUrlResponse(url);
+    }
+
+    public UrlResponse update(String shortUrl, UrlUpdateRequest urlUpdateRequest) {
         Url url = getUrlById(shortUrl);
 
         urlMapper.updateUrl(url, urlUpdateRequest);
 
         return urlMapper.toUrlResponse(urlRepository.save(url));
+    }
+
+    public UrlResponse updateOneByShortUrlAndUserId(String shortUrl, String userId, UrlUpdateRequest urlUpdateRequest) {
+        if (!userRepository.existsById(userId)) {
+            throw new AppException(ErrorCode.USER_NOTFOUND);
+        }
+
+        Url url = urlRepository
+                .findByShortUrlAndUserId(shortUrl, userId)
+                .orElseThrow(() -> new AppException(ErrorCode.URL_NOTFOUND));
+
+        urlMapper.updateUrl(url, urlUpdateRequest);
+
+        url = urlRepository.save(url);
+
+        // set these 2 to null because we all know its user id and campaign id in the request already
+        url.setUser(null);
+        url.setCampaign(null);
+
+        return urlMapper.toUrlResponse(url);
+    }
+
+    public UrlResponse updateOneByShortUrlAndCampaignIdAndUserId(
+            String shortUrl, String campaignId, String userId, UrlUpdateRequest urlUpdateRequest) {
+        if (!userRepository.existsById(userId)) {
+            throw new AppException(ErrorCode.USER_NOTFOUND);
+        }
+
+        if (!campaignRepository.existsByIdAndUserId(campaignId, userId)) {
+            throw new AppException(ErrorCode.CAMPAIGN_NOTFOUND);
+        }
+
+        Url url = urlRepository
+                .findByShortUrlAndCampaignIdAndUserId(shortUrl, campaignId, userId)
+                .orElseThrow(() -> new AppException(ErrorCode.URL_NOTFOUND));
+
+        urlMapper.updateUrl(url, urlUpdateRequest);
+
+        url = urlRepository.save(url);
+
+        // set these 2 to null because we all know its user id and campaign id in the request already
+        url.setUser(null);
+        url.setCampaign(null);
+
+        return urlMapper.toUrlResponse(url);
     }
 
     public void delete(String shortUrl) {
@@ -129,6 +330,26 @@ public class UrlService {
         }
 
         urlRepository.deleteById(shortUrl);
+    }
+
+    public void deleteOneByShortUrlAndUserId(String shortUrl, String userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new AppException(ErrorCode.USER_NOTFOUND);
+        }
+
+        urlRepository.deleteByShortUrlAndUserId(shortUrl, userId);
+    }
+
+    public void deleteOneByShortUrlAndCampaignIdAndUserId(String shortUrl, String campaignId, String userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new AppException(ErrorCode.USER_NOTFOUND);
+        }
+
+        if (!campaignRepository.existsByIdAndUserId(campaignId, userId)) {
+            throw new AppException(ErrorCode.CAMPAIGN_NOTFOUND);
+        }
+
+        urlRepository.deleteByShortUrlAndCampaignIdAndUserId(shortUrl, campaignId, userId);
     }
 
     private Url getUrlById(String shortUrl) {

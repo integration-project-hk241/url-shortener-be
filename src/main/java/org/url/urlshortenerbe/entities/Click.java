@@ -24,6 +24,6 @@ public class Click {
     private String userAgent;
 
     @ManyToOne(cascade = CascadeType.ALL)
-    @JoinColumn(nullable = false)
+    @JoinColumn(name = "url_id", nullable = false)
     private Url url;
 }

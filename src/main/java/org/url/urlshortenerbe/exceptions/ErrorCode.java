@@ -27,7 +27,8 @@ public enum ErrorCode {
     // SERVICE ERROR CODES
     ALIAS_EXISTED(1004, "Alias already existed", HttpStatus.CONFLICT),
     URL_NOTFOUND(1004, "URL not found", HttpStatus.BAD_REQUEST),
-    ALIAS_INVALID(1004, "Invalid alias", HttpStatus.BAD_REQUEST);
+    ALIAS_INVALID(1004, "Invalid alias", HttpStatus.BAD_REQUEST),
+    CAMPAIGN_NOTFOUND(1004, "Campaign not found", HttpStatus.BAD_REQUEST);
 
     private final int code;
     private final String message;

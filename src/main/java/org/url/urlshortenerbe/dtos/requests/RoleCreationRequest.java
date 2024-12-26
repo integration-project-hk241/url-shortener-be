@@ -20,8 +20,6 @@ public class RoleCreationRequest {
     @NotBlank(message = "Role name cannot be blank")
     private String name;
 
-    @Size(min = 4, max = 50, message = "Role description must be between 4 and 50 characters")
-    @NotBlank(message = "Role description cannot be blank")
     private String description;
 
     @NotEmpty(message = "Permissions are required")
