@@ -7,13 +7,12 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
+import java.util.Random;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.url.urlshortenerbe.dtos.requests.UrlCreationRequest;
 import org.url.urlshortenerbe.dtos.requests.UrlUpdateRequest;
@@ -38,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class UrlService {
     @Value("${url.length}")
-    private int shortUrlLength;
+    private int hashLength;
 
     @Value("${url.expiration-time}")
     private int expirationTime;
@@ -51,76 +50,26 @@ public class UrlService {
 
     private final Base62Encoder base62Encoder;
 
-    public UrlResponse create(UrlCreationRequest urlCreationRequest) throws NoSuchAlgorithmException {
+    // Create url for guest only
+    public UrlResponse createForGuest(UrlCreationRequest urlCreationRequest) throws NoSuchAlgorithmException {
         // longUrl, alias, userid
-        Url url = urlMapper.toUrl(urlCreationRequest);
-
-        String shortUrl;
-
-        // If the user want to custom the alias
-        if (urlCreationRequest.getAlias() != null) {
-            shortUrl = urlCreationRequest.getAlias();
-
-            if (urlRepository.existsById(shortUrl)) {
-                throw new AppException(ErrorCode.ALIAS_EXISTED);
-            }
-        } else {
-            shortUrl = generateHash(url.getLongUrl());
-
-            // Handle potential collisions
-            while (urlRepository.existsById(shortUrl)) {
-                shortUrl = generateHash(shortUrl);
-            }
-        }
-
-        url.setShortUrl(shortUrl);
-        url.setCreatedAt(Date.from(Instant.now()));
-        url.setExpiresAt(Date.from(Instant.now().plus(expirationTime, ChronoUnit.DAYS)));
-
-        // Find the user if the current is not guest
-        SecurityContext securityContext = SecurityContextHolder.getContext();
-        String email = securityContext.getAuthentication().getName();
-        if (!email.equals("anonymousUser")) {
-            User user = userRepository.findByEmail(email).orElseThrow(() -> new AppException(ErrorCode.USER_NOTFOUND));
-            url.setUser(user);
-        } else {
-            url.setUser(null);
-        }
+        Url url = create(urlCreationRequest);
+        url.setUser(null);
 
         // Save url
         url = urlRepository.save(url);
 
-        return urlMapper.toUrlResponse(url);
+        UrlResponse urlResponse = urlMapper.toUrlResponse(url);
+        urlResponse.setDeleted(null);
+
+        return urlResponse;
     }
 
     public UrlResponse createWithUserId(String userId, UrlCreationRequest urlCreationRequest)
             throws NoSuchAlgorithmException {
         User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOTFOUND));
 
-        Url url = urlMapper.toUrl(urlCreationRequest);
-
-        String shortUrl;
-
-        // If the user want to custom the alias
-        if (urlCreationRequest.getAlias() != null) {
-            shortUrl = urlCreationRequest.getAlias();
-
-            if (urlRepository.existsById(shortUrl)) {
-                throw new AppException(ErrorCode.ALIAS_EXISTED);
-            }
-        } else {
-            shortUrl = generateHash(url.getLongUrl());
-
-            // Handle potential collisions
-            while (urlRepository.existsById(shortUrl)) {
-                shortUrl = generateHash(shortUrl);
-            }
-        }
-
-        url.setShortUrl(shortUrl);
-        url.setCreatedAt(Date.from(Instant.now()));
-        url.setExpiresAt(Date.from(Instant.now().plus(expirationTime, ChronoUnit.DAYS)));
-
+        Url url = create(urlCreationRequest);
         url.setUser(user);
 
         url = urlRepository.save(url);
@@ -135,29 +84,7 @@ public class UrlService {
                 .findById(campaignId)
                 .orElseThrow(() -> new AppException(ErrorCode.CAMPAIGN_NOTFOUND));
 
-        Url url = urlMapper.toUrl(urlCreationRequest);
-
-        String shortUrl;
-
-        // If the user want to custom the alias
-        if (urlCreationRequest.getAlias() != null) {
-            shortUrl = urlCreationRequest.getAlias();
-
-            if (urlRepository.existsById(shortUrl)) {
-                throw new AppException(ErrorCode.ALIAS_EXISTED);
-            }
-        } else {
-            shortUrl = generateHash(url.getLongUrl());
-
-            // Handle potential collisions
-            while (urlRepository.existsById(shortUrl)) {
-                shortUrl = generateHash(shortUrl);
-            }
-        }
-
-        url.setShortUrl(shortUrl);
-        url.setCreatedAt(Date.from(Instant.now()));
-        url.setExpiresAt(Date.from(Instant.now().plus(expirationTime, ChronoUnit.DAYS)));
+        Url url = create(urlCreationRequest);
         url.setUser(user);
         url.setCampaign(campaign);
 
@@ -166,9 +93,21 @@ public class UrlService {
         return urlMapper.toUrlResponse(url);
     }
 
-    public PageResponse<UrlResponse> getAll(int page, int size) {
+    public PageResponse<UrlResponse> getAll(int page, int size, String type) {
         Pageable pageable = PageRequest.of(page - 1, size);
-        Page<Url> urls = urlRepository.findAll(pageable);
+
+        Page<Url> urls = null;
+
+        switch (type) {
+            case "all":
+                urls = urlRepository.findAll(pageable);
+            case "not_deleted":
+                urls = urlRepository.findAllByDeletedIs(false, pageable);
+            case "deleted":
+                urls = urlRepository.findAllByDeletedIs(true, pageable);
+            default:
+                urls = urlRepository.findAll(pageable);
+        }
 
         List<UrlResponse> urlResponseList =
                 urls.getContent().stream().map(urlMapper::toUrlResponse).toList();
@@ -229,19 +168,19 @@ public class UrlService {
                 .build();
     }
 
-    public UrlResponse getOne(String shortUrl) {
-        Url url = getUrlById(shortUrl);
+    public UrlResponse getOne(String hash) {
+        Url url = getUrlByHash(hash);
 
         return urlMapper.toUrlResponse(url);
     }
 
-    public UrlResponse getOneByIdAndUserId(String shortUrl, String userId) {
+    public UrlResponse getOneByIdAndUserId(String hash, String userId) {
         if (!userRepository.existsById(userId)) {
             throw new AppException(ErrorCode.USER_NOTFOUND);
         }
 
         Url url = urlRepository
-                .findByShortUrlAndUserId(shortUrl, userId)
+                .findByHashAndUserId(hash, userId)
                 .orElseThrow(() -> new AppException(ErrorCode.URL_NOTFOUND));
 
         // set these 2 to null because we all know its user id and campaign id in the request already
@@ -251,17 +190,17 @@ public class UrlService {
         return urlMapper.toUrlResponse(url);
     }
 
-    public UrlResponse getOneByIdAndCampaignIdAndUserId(String shortUrl, String campaignId, String userId) {
+    public UrlResponse getOneByIdAndCampaignIdAndUserId(String hash, String campaignId, String userId) {
         if (!userRepository.existsById(userId)) {
             throw new AppException(ErrorCode.USER_NOTFOUND);
         }
 
-        if (!campaignRepository.existsByIdAndUserId(campaignId, userId)) {
+        if (campaignRepository.existsByIdAndUserId(campaignId, userId)) {
             throw new AppException(ErrorCode.CAMPAIGN_NOTFOUND);
         }
 
         Url url = urlRepository
-                .findByShortUrlAndCampaignIdAndUserId(shortUrl, campaignId, userId)
+                .findByHashAndCampaignIdAndUserId(hash, campaignId, userId)
                 .orElseThrow(() -> new AppException(ErrorCode.URL_NOTFOUND));
 
         // set these 2 to null because we all know its user id and campaign id in the request already
@@ -271,21 +210,22 @@ public class UrlService {
         return urlMapper.toUrlResponse(url);
     }
 
-    public UrlResponse update(String shortUrl, UrlUpdateRequest urlUpdateRequest) {
-        Url url = getUrlById(shortUrl);
+    public UrlResponse update(String hash, UrlUpdateRequest urlUpdateRequest) {
+        Url url = getUrlByHash(hash);
 
-        urlMapper.updateUrl(url, urlUpdateRequest);
+        // set new alias to it
+        url.setHash(urlUpdateRequest.getAlias());
 
         return urlMapper.toUrlResponse(urlRepository.save(url));
     }
 
-    public UrlResponse updateOneByShortUrlAndUserId(String shortUrl, String userId, UrlUpdateRequest urlUpdateRequest) {
+    public UrlResponse updateOneByHashAndUserId(String hash, String userId, UrlUpdateRequest urlUpdateRequest) {
         if (!userRepository.existsById(userId)) {
             throw new AppException(ErrorCode.USER_NOTFOUND);
         }
 
         Url url = urlRepository
-                .findByShortUrlAndUserId(shortUrl, userId)
+                .findByHashAndUserId(hash, userId)
                 .orElseThrow(() -> new AppException(ErrorCode.URL_NOTFOUND));
 
         urlMapper.updateUrl(url, urlUpdateRequest);
@@ -299,18 +239,18 @@ public class UrlService {
         return urlMapper.toUrlResponse(url);
     }
 
-    public UrlResponse updateOneByShortUrlAndCampaignIdAndUserId(
-            String shortUrl, String campaignId, String userId, UrlUpdateRequest urlUpdateRequest) {
+    public UrlResponse updateOneByHashAndCampaignIdAndUserId(
+            String hash, String campaignId, String userId, UrlUpdateRequest urlUpdateRequest) {
         if (!userRepository.existsById(userId)) {
             throw new AppException(ErrorCode.USER_NOTFOUND);
         }
 
-        if (!campaignRepository.existsByIdAndUserId(campaignId, userId)) {
+        if (campaignRepository.existsByIdAndUserId(campaignId, userId)) {
             throw new AppException(ErrorCode.CAMPAIGN_NOTFOUND);
         }
 
         Url url = urlRepository
-                .findByShortUrlAndCampaignIdAndUserId(shortUrl, campaignId, userId)
+                .findByHashAndCampaignIdAndUserId(hash, campaignId, userId)
                 .orElseThrow(() -> new AppException(ErrorCode.URL_NOTFOUND));
 
         urlMapper.updateUrl(url, urlUpdateRequest);
@@ -324,43 +264,42 @@ public class UrlService {
         return urlMapper.toUrlResponse(url);
     }
 
-    public void delete(String shortUrl) {
-        if (!urlRepository.existsById(shortUrl)) {
-            throw new AppException(ErrorCode.URL_NOTFOUND);
-        }
+    public void delete(String hash) {
+        Url url = getUrlByHash(hash);
+        url.setDeleted(true);
 
-        urlRepository.deleteById(shortUrl);
+        urlRepository.save(url);
     }
 
-    public void deleteOneByShortUrlAndUserId(String shortUrl, String userId) {
+    public void deleteOneByHashAndUserId(String hash, String userId) {
         if (!userRepository.existsById(userId)) {
             throw new AppException(ErrorCode.USER_NOTFOUND);
         }
 
-        urlRepository.deleteByShortUrlAndUserId(shortUrl, userId);
+        urlRepository.deleteByHashAndUserId(hash, userId);
     }
 
-    public void deleteOneByShortUrlAndCampaignIdAndUserId(String shortUrl, String campaignId, String userId) {
+    public void deleteOneByHashAndCampaignIdAndUserId(String hash, String campaignId, String userId) {
         if (!userRepository.existsById(userId)) {
             throw new AppException(ErrorCode.USER_NOTFOUND);
         }
 
-        if (!campaignRepository.existsByIdAndUserId(campaignId, userId)) {
+        if (campaignRepository.existsByIdAndUserId(campaignId, userId)) {
             throw new AppException(ErrorCode.CAMPAIGN_NOTFOUND);
         }
 
-        urlRepository.deleteByShortUrlAndCampaignIdAndUserId(shortUrl, campaignId, userId);
+        urlRepository.deleteByHashAndCampaignIdAndUserId(hash, campaignId, userId);
     }
 
-    private Url getUrlById(String shortUrl) {
-        return urlRepository.findById(shortUrl).orElseThrow(() -> new AppException(ErrorCode.URL_NOTFOUND));
+    private Url getUrlByHash(String hash) {
+        return urlRepository.findByHash(hash).orElseThrow(() -> new AppException(ErrorCode.URL_NOTFOUND));
     }
 
     private String generateHash(String longUrl) throws NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("MD5");
         byte[] digest = md.digest(longUrl.getBytes());
 
-        // Extract the first 6 bytes (12 hex charactesr)
+        // Extract the first 6 bytes (12 hex characters)
         StringBuilder hexString = new StringBuilder();
         for (int i = 0; i < 6; i++) {
             String hex = Integer.toHexString(0xFF & digest[i]);
@@ -381,12 +320,51 @@ public class UrlService {
         String base62 = base62Encoder.encode(decimal);
 
         // Ensure the short Url meets the desired length
-        if (base62.length() < shortUrlLength) {
-            base62 = String.format("%" + shortUrlLength + "s", base62).replace(' ', '0');
-        } else if (base62.length() > shortUrlLength) {
-            base62 = base62.substring(0, shortUrlLength);
+        if (base62.length() < hashLength) {
+            base62 = String.format("%" + hashLength + "s", base62).replace(' ', '0');
+        } else if (base62.length() > hashLength) {
+            base62 = base62.substring(0, hashLength);
         }
 
         return base62;
+    }
+
+    private Url create(UrlCreationRequest urlCreationRequest) throws NoSuchAlgorithmException {
+        Url url = urlMapper.toUrl(urlCreationRequest);
+
+        String alias;
+
+        // If the user want to custom the alias
+        if (urlCreationRequest.getAlias() != null) {
+            alias = urlCreationRequest.getAlias();
+
+            if (urlRepository.existsByHash(alias)) {
+                throw new AppException(ErrorCode.ALIAS_EXISTED);
+            }
+        } else {
+            alias = generateHash(url.getLongUrl());
+
+            // Handle potential collisions
+            while (urlRepository.existsByHash(alias)) {
+                alias = generateHash(alias + getSaltString());
+            }
+        }
+
+        url.setHash(alias);
+        url.setCreatedAt(Date.from(Instant.now()));
+        url.setExpiresAt(Date.from(Instant.now().plus(expirationTime, ChronoUnit.DAYS)));
+
+        return url;
+    }
+
+    private String getSaltString() {
+        String SALTCHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+        StringBuilder salt = new StringBuilder();
+        Random rnd = new Random();
+        while (salt.length() < 56) { // length of the random string.
+            int index = (int) (rnd.nextFloat() * SALTCHARS.length());
+            salt.append(SALTCHARS.charAt(index));
+        }
+        return salt.toString();
     }
 }

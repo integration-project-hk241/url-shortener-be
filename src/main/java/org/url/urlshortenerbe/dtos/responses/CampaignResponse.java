@@ -26,4 +26,6 @@ public class CampaignResponse {
     private String description;
 
     private String userId;
+
+    private Boolean deleted;
 }

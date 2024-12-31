@@ -18,14 +18,14 @@ public class RedirectionController {
     private final UrlService urlService;
     private final RedirectionService redirectionService;
 
-    @GetMapping("/{shortUrl}")
+    @GetMapping("/{hash}")
     public ResponseEntity<?> redirect(
-            @PathVariable String shortUrl,
+            @PathVariable String hash,
             @RequestHeader(HttpHeaders.REFERER) Optional<String> referer,
             @RequestHeader(HttpHeaders.USER_AGENT) String userAgent,
             @RequestParam(defaultValue = "Others", required = false, value = "r") String refererHeader) {
 
-        String longUrl = redirectionService.getUrlAndCountClick(shortUrl, referer.orElse(refererHeader), userAgent);
+        String longUrl = redirectionService.getUrlAndCountClick(hash, referer.orElse(refererHeader), userAgent);
 
         return ResponseEntity.status(HttpStatus.MOVED_PERMANENTLY)
                 .location(URI.create(longUrl))

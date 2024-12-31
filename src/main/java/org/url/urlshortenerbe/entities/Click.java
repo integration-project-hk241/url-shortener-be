@@ -23,7 +23,7 @@ public class Click {
 
     private String userAgent;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne
     @JoinColumn(name = "url_id", nullable = false)
     private Url url;
 }

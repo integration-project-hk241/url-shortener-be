@@ -36,13 +36,13 @@ public class RoleService {
 
     public RoleResponse create(RoleCreationRequest roleCreationRequest) {
         Role role = roleMapper.toRole(roleCreationRequest);
-        role.setName(role.getName().toUpperCase());
+        role.setName(role.getName().toUpperCase().replace("-", "_"));
 
         Set<PermissionResponse> permissionResponseSet = new HashSet<>();
 
         roleCreationRequest.getPermissions().forEach(permission -> {
             Permission permissionEntity = permissionRepository
-                    .findById(permission.toUpperCase())
+                    .findById(permission.toUpperCase().replace("-", "_"))
                     .orElseThrow(() -> new AppException(ErrorCode.PERMISSION_NOTFOUND));
 
             PermissionResponse permissionResponse = permissionMapper.toPermissionResponse(permissionEntity);
@@ -56,13 +56,17 @@ public class RoleService {
         return roleResponse;
     }
 
-    public PageResponse<RoleResponse> getAll(int page, int size) {
+    public PageResponse<RoleResponse> getAll(int page, int size, boolean compact) {
         Pageable pageable = PageRequest.of(page - 1, size);
         Page<Role> roles = roleRepository.findAll(pageable);
 
         List<RoleResponse> roleResponseList = roles.getContent().stream()
                 .map(role -> {
                     RoleResponse roleResponse = roleMapper.toRoleResponse(role);
+
+                    if (compact) {
+                        return roleResponse;
+                    }
 
                     Set<PermissionResponse> permissionResponseSet = role.getPermissions().stream()
                             .map(permissionMapper::toPermissionResponse)
@@ -97,12 +101,13 @@ public class RoleService {
         Role role = getRole(roleName);
 
         roleMapper.updateRole(role, roleUpdateRequest);
+        role.setName(role.getName().toUpperCase().replace("-", "_"));
 
         Set<Permission> permissions = new HashSet<>();
         // Check if all permissions available
         roleUpdateRequest.getPermissions().forEach(permission -> {
             Permission permissionEntity = permissionRepository
-                    .findById(permission.toUpperCase())
+                    .findById(permission.toUpperCase().replace("-", "_"))
                     .orElseThrow(() -> new AppException(ErrorCode.PERMISSION_NOTFOUND));
 
             permissions.add(permissionEntity);

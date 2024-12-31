@@ -7,16 +7,22 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.url.urlshortenerbe.entities.Url;
 
-public interface UrlRepository extends JpaRepository<Url, String> {
+public interface UrlRepository extends JpaRepository<Url, Integer> {
+    Page<Url> findAllByDeletedIs(boolean deleted, Pageable pageable);
+
     Page<Url> findAllByUserId(String userId, Pageable pageable);
 
     Page<Url> findAllByCampaignIdAndUserId(String campaignId, String userId, Pageable pageable);
 
-    Optional<Url> findByShortUrlAndUserId(String shortUrl, String userId);
+    Optional<Url> findByHash(String hash);
 
-    Optional<Url> findByShortUrlAndCampaignIdAndUserId(String urlId, String campaignId, String userId);
+    Optional<Url> findByHashAndUserId(String hash, String userId);
 
-    void deleteByShortUrlAndUserId(String shortUrl, String userId);
+    Optional<Url> findByHashAndCampaignIdAndUserId(String urlId, String campaignId, String userId);
 
-    void deleteByShortUrlAndCampaignIdAndUserId(String shortUrl, String campaignId, String userId);
+    void deleteByHashAndUserId(String hash, String userId);
+
+    void deleteByHashAndCampaignIdAndUserId(String hash, String campaignId, String userId);
+
+    boolean existsByHash(String hash);
 }

@@ -22,46 +22,52 @@ import lombok.extern.slf4j.Slf4j;
 public class UrlController {
     private final UrlService urlService;
 
+    // Create url for guest
     @PostMapping
     public Response<UrlResponse> create(@RequestBody @Valid UrlCreationRequest urlCreationRequest)
             throws NoSuchAlgorithmException {
         log.error(urlCreationRequest.toString());
         return Response.<UrlResponse>builder()
                 .success(true)
-                .data(urlService.create(urlCreationRequest))
+                .data(urlService.createForGuest(urlCreationRequest))
                 .build();
     }
 
+    // Get all urls for admin
     @GetMapping
     public Response<PageResponse<UrlResponse>> getAll(
             @RequestParam(defaultValue = "1", required = false) int page,
-            @RequestParam(defaultValue = "10", required = false) int size) {
+            @RequestParam(defaultValue = "10", required = false) int size,
+            @RequestParam(defaultValue = "not_deleted", required = false) String type) {
         return Response.<PageResponse<UrlResponse>>builder()
                 .success(true)
-                .data(urlService.getAll(page, size))
+                .data(urlService.getAll(page, size, type))
                 .build();
     }
 
-    @GetMapping("/{shortUrl}")
-    public Response<UrlResponse> get(@PathVariable String shortUrl) {
+    // Get an url for admin view
+    @GetMapping("/{hash}")
+    public Response<UrlResponse> get(@PathVariable String hash) {
         return Response.<UrlResponse>builder()
                 .success(true)
-                .data(urlService.getOne(shortUrl))
+                .data(urlService.getOne(hash))
                 .build();
     }
 
-    @PutMapping("/{shortUrl}")
+    // Update an url for admin view
+    @PutMapping("/{hash}")
     public Response<UrlResponse> update(
-            @PathVariable String shortUrl, @RequestBody @Valid UrlUpdateRequest urlUpdateRequest) {
+            @PathVariable String hash, @RequestBody @Valid UrlUpdateRequest urlUpdateRequest) {
         return Response.<UrlResponse>builder()
                 .success(true)
-                .data(urlService.update(shortUrl, urlUpdateRequest))
+                .data(urlService.update(hash, urlUpdateRequest))
                 .build();
     }
 
-    @DeleteMapping("/{shortUrl}")
-    public Response<Void> delete(@PathVariable String shortUrl) {
-        urlService.delete(shortUrl);
+    // Delete an url for admin view
+    @DeleteMapping("/{hash}")
+    public Response<Void> delete(@PathVariable String hash) {
+        urlService.delete(hash);
 
         return Response.<Void>builder().success(true).build();
     }

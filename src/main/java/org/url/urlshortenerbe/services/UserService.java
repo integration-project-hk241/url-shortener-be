@@ -75,30 +75,12 @@ public class UserService {
         return userResponse;
     }
 
-    public PageResponse<UserResponse> getAll(int page, int size) {
+    public PageResponse<UserResponse> getAll(int page, int size, boolean compact) {
         Pageable pageable = PageRequest.of(page - 1, size);
         Page<User> users = userRepository.findAll(pageable);
 
         List<UserResponse> userResponseList = users.getContent().stream()
-                .map(user -> {
-                    UserResponse userResponse = userMapper.toUserResponse(user);
-
-                    // map roles of each user
-                    userResponse.setRoles(user.getRoles().stream()
-                            .map(role -> {
-                                RoleResponse roleResponse = roleMapper.toRoleResponse(role);
-
-                                Set<PermissionResponse> permissionResponseSet = role.getPermissions().stream()
-                                        .map(permissionMapper::toPermissionResponse)
-                                        .collect(Collectors.toSet());
-                                roleResponse.setPermissions(permissionResponseSet);
-
-                                return roleResponse;
-                            })
-                            .collect(Collectors.toSet()));
-
-                    return userResponse;
-                })
+                .map(user -> mapRolesAndPermissionsToUserResponse(user, compact))
                 .toList();
 
         return PageResponse.<UserResponse>builder()
@@ -109,45 +91,22 @@ public class UserService {
                 .build();
     }
 
-    public UserResponse getOne(String userId) {
+    public UserResponse getOne(String userId, boolean compact) {
         User user = getUser(userId);
 
-        UserResponse userResponse = userMapper.toUserResponse(user);
-
-        // map roles of each user
-        userResponse.setRoles(user.getRoles().stream()
-                .map(role -> {
-                    RoleResponse roleResponse = roleMapper.toRoleResponse(role);
-
-                    Set<PermissionResponse> permissionResponseSet = role.getPermissions().stream()
-                            .map(permissionMapper::toPermissionResponse)
-                            .collect(Collectors.toSet());
-                    roleResponse.setPermissions(permissionResponseSet);
-
-                    return roleResponse;
-                })
-                .collect(Collectors.toSet()));
-
-        return userResponse;
-    }
-
-    public UserResponse getCurrentUser() {
-        SecurityContext securityContext = SecurityContextHolder.getContext();
-        String username = securityContext.getAuthentication().getName();
-
-        User user = userRepository.findByEmail(username).orElseThrow(() -> new AppException(ErrorCode.USER_NOTFOUND));
-
-        UserResponse userResponse = userMapper.toUserResponse(user);
-
-        // map roles of each user
-        userResponse.setRoles(
-                user.getRoles().stream().map(roleMapper::toRoleResponse).collect(Collectors.toSet()));
-
-        return userResponse;
+        return mapRolesAndPermissionsToUserResponse(user, compact);
     }
 
     public UserResponse update(String userId, UserUpdateRequest userUpdateRequest) {
+        SecurityContext securityContext = SecurityContextHolder.getContext();
+        String email = securityContext.getAuthentication().getName();
+
         User user = getUser(userId);
+
+        // Only allow admin or user with its correct email to change the information
+        if (!email.equals("admin@admin.com") && !user.getEmail().equals(email)) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
 
         userMapper.updateUser(user, userUpdateRequest);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -180,5 +139,29 @@ public class UserService {
 
     private User getUser(String userId) {
         return userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOTFOUND));
+    }
+
+    private UserResponse mapRolesAndPermissionsToUserResponse(User user, boolean compact) {
+        UserResponse userResponse = userMapper.toUserResponse(user);
+
+        // map roles of each user
+        userResponse.setRoles(user.getRoles().stream()
+                .map(role -> {
+                    RoleResponse roleResponse = roleMapper.toRoleResponse(role);
+
+                    if (compact) {
+                        return roleResponse;
+                    }
+
+                    Set<PermissionResponse> permissionResponseSet = role.getPermissions().stream()
+                            .map(permissionMapper::toPermissionResponse)
+                            .collect(Collectors.toSet());
+                    roleResponse.setPermissions(permissionResponseSet);
+
+                    return roleResponse;
+                })
+                .collect(Collectors.toSet()));
+
+        return userResponse;
     }
 }

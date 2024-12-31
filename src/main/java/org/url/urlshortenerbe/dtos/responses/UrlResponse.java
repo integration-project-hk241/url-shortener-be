@@ -15,8 +15,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UrlResponse {
-    private String shortUrl;
-
     private String longUrl;
 
     private Date createdAt;
@@ -25,5 +23,9 @@ public class UrlResponse {
 
     private String userId;
 
+    private String hash;
+
     private String campaignId;
+
+    private Boolean deleted;
 }

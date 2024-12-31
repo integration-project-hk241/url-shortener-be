@@ -44,32 +44,31 @@ public class UserCampaignUrlController {
                 .build();
     }
 
-    @GetMapping("/{shortUrl}")
+    @GetMapping("/{hash}")
     public Response<UrlResponse> getOneByIdAndCampaignIdAndUserId(
-            @PathVariable String shortUrl, @PathVariable String userId, @PathVariable String campaignId) {
+            @PathVariable String hash, @PathVariable String userId, @PathVariable String campaignId) {
         return Response.<UrlResponse>builder()
                 .success(true)
-                .data(urlService.getOneByIdAndCampaignIdAndUserId(shortUrl, campaignId, userId))
+                .data(urlService.getOneByIdAndCampaignIdAndUserId(hash, campaignId, userId))
                 .build();
     }
 
-    @PutMapping("/{shortUrl}")
+    @PutMapping("/{hash}")
     public Response<UrlResponse> updateOneByIdAndCampaignIdAndUserId(
-            @PathVariable String shortUrl,
+            @PathVariable String hash,
             @PathVariable String userId,
             @PathVariable String campaignId,
             @RequestBody @Valid UrlUpdateRequest urlUpdateRequest) {
         return Response.<UrlResponse>builder()
                 .success(true)
-                .data(urlService.updateOneByShortUrlAndCampaignIdAndUserId(
-                        shortUrl, campaignId, userId, urlUpdateRequest))
+                .data(urlService.updateOneByHashAndCampaignIdAndUserId(hash, campaignId, userId, urlUpdateRequest))
                 .build();
     }
 
-    @DeleteMapping("/{shortUrl}")
+    @DeleteMapping("/{hash}")
     public Response<UrlResponse> deleteOneByIdAndCampaignIdAndUserId(
-            @PathVariable String shortUrl, @PathVariable String userId, @PathVariable String campaignId) {
-        urlService.deleteOneByShortUrlAndCampaignIdAndUserId(shortUrl, campaignId, userId);
+            @PathVariable String hash, @PathVariable String userId, @PathVariable String campaignId) {
+        urlService.deleteOneByHashAndCampaignIdAndUserId(hash, campaignId, userId);
 
         return Response.<UrlResponse>builder().success(true).build();
     }

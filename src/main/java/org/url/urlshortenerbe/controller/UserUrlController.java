@@ -41,29 +41,28 @@ public class UserUrlController {
                 .build();
     }
 
-    @GetMapping("/{shortUrl}")
-    public Response<UrlResponse> getOneByShortUrlAndUserId(@PathVariable String shortUrl, @PathVariable String userId) {
+    @GetMapping("/{hash}")
+    public Response<UrlResponse> getOneByHashAndUserId(@PathVariable String hash, @PathVariable String userId) {
         return Response.<UrlResponse>builder()
                 .success(true)
-                .data(urlService.getOneByIdAndUserId(shortUrl, userId))
+                .data(urlService.getOneByIdAndUserId(hash, userId))
                 .build();
     }
 
-    @PutMapping("/{shortUrl}")
-    public Response<UrlResponse> updateONeByShortUrlAndUserId(
-            @PathVariable String shortUrl,
+    @PutMapping("/{hash}")
+    public Response<UrlResponse> updateOneByHashAndUserId(
+            @PathVariable String hash,
             @PathVariable String userId,
-            @RequestBody @Valid UrlUpdateRequest urlUpdateRequest)
-            throws NoSuchAlgorithmException {
+            @RequestBody @Valid UrlUpdateRequest urlUpdateRequest) {
         return Response.<UrlResponse>builder()
                 .success(true)
-                .data(urlService.updateOneByShortUrlAndUserId(shortUrl, userId, urlUpdateRequest))
+                .data(urlService.updateOneByHashAndUserId(hash, userId, urlUpdateRequest))
                 .build();
     }
 
-    @DeleteMapping("/{shortUrl}")
-    public Response<Void> deleteOneByShortUrl(@PathVariable String shortUrl, @PathVariable String userId) {
-        urlService.deleteOneByShortUrlAndUserId(shortUrl, userId);
+    @DeleteMapping("/{hash}")
+    public Response<Void> deleteOneByHash(@PathVariable String hash, @PathVariable String userId) {
+        urlService.deleteOneByHashAndUserId(hash, userId);
 
         return Response.<Void>builder().success(true).build();
     }

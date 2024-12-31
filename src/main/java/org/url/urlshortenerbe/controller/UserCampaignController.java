@@ -60,7 +60,6 @@ public class UserCampaignController {
                 .build();
     }
 
-
     // Campaign manager view for updating by campaign id and user id
     @PutMapping("/{campaignId}")
     public Response<CampaignResponse> updateCampaignWithUserId(

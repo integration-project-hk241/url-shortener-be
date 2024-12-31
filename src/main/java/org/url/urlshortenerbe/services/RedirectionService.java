@@ -19,8 +19,8 @@ public class RedirectionService {
     private final ClickRepository clickRepository;
     private final UrlRepository urlRepository;
 
-    public String getUrlAndCountClick(String shortUrl, String referer, String userAgent) {
-        Url url = urlRepository.findById(shortUrl).orElseThrow(() -> new AppException(ErrorCode.URL_NOTFOUND));
+    public String getUrlAndCountClick(String hash, String referer, String userAgent) {
+        Url url = urlRepository.findByHash(hash).orElseThrow(() -> new AppException(ErrorCode.URL_NOTFOUND));
 
         Click click = Click.builder()
                 .clickedAt(Date.from(Instant.now()))

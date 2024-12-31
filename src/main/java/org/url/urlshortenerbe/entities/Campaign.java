@@ -30,6 +30,9 @@ public class Campaign {
     @Column(nullable = false)
     private Date endDate;
 
+    @Column(nullable = false)
+    private Boolean deleted = Boolean.FALSE;
+
     private String description;
 
     @ManyToOne

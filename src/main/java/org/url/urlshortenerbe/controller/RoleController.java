@@ -29,10 +29,11 @@ public class RoleController {
     @GetMapping
     Response<PageResponse<RoleResponse>> getAll(
             @RequestParam(defaultValue = "1", required = false) int page,
-            @RequestParam(defaultValue = "10", required = false) int size) {
+            @RequestParam(defaultValue = "10", required = false) int size,
+            @RequestParam(defaultValue = "false", required = false) boolean compact) {
         return Response.<PageResponse<RoleResponse>>builder()
                 .success(true)
-                .data(roleService.getAll(page, size))
+                .data(roleService.getAll(page, size, compact))
                 .build();
     }
 

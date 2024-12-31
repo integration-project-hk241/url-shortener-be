@@ -27,10 +27,21 @@ public class CampaignService {
 
     private final CampaignMapper campaignMapper;
 
-    public PageResponse<CampaignResponse> getAll(int page, int size) {
+    public PageResponse<CampaignResponse> getAll(int page, int size, String type) {
         PageRequest pageRequest = PageRequest.of(page, size);
 
-        Page<Campaign> campaigns = campaignRepository.findAll(pageRequest);
+        Page<Campaign> campaigns = null;
+
+        switch (type) {
+            case ("all"):
+                campaigns = campaignRepository.findAll(pageRequest);
+            case ("not_deleted"):
+                campaigns = campaignRepository.findAllByDeletedIs(false, pageRequest);
+            case ("deleted"):
+                campaigns = campaignRepository.findAllByDeletedIs(true, pageRequest);
+            default:
+                campaigns = campaignRepository.findAll(pageRequest);
+        }
 
         List<CampaignResponse> campaignResponses = campaigns.getContent().stream()
                 .map(campaignMapper::toCampaignResponse)
@@ -132,5 +143,26 @@ public class CampaignService {
         }
 
         campaignRepository.deleteByIdAndUserId(campaignId, userId);
+    }
+
+    public void deleteOneById(String campaignId) {
+        Campaign campaign = campaignRepository
+                .findById(campaignId)
+                .orElseThrow(() -> new AppException(ErrorCode.CAMPAIGN_NOTFOUND));
+        campaign.setDeleted(true);
+
+        campaignRepository.save(campaign);
+    }
+
+    public CampaignResponse updateOneById(String campaignId, CampaignUpdateRequest campaignUpdateRequest) {
+        Campaign campaign = campaignRepository
+                .findById(campaignId)
+                .orElseThrow(() -> new AppException(ErrorCode.CAMPAIGN_NOTFOUND));
+
+        campaignMapper.updateCampaign(campaign, campaignUpdateRequest);
+
+        campaign = campaignRepository.save(campaign);
+
+        return campaignMapper.toCampaignResponse(campaign);
     }
 }

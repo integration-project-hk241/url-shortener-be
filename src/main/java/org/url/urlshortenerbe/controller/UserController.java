@@ -29,26 +29,21 @@ public class UserController {
     @GetMapping
     public Response<PageResponse<UserResponse>> getAll(
             @RequestParam(defaultValue = "1", required = false) int page,
-            @RequestParam(defaultValue = "10", required = false) int size) {
+            @RequestParam(defaultValue = "10", required = false) int size,
+            @RequestParam(defaultValue = "false", required = false) boolean compact) {
         return Response.<PageResponse<UserResponse>>builder()
                 .success(true)
-                .data(userService.getAll(page, size))
+                .data(userService.getAll(page, size, compact))
                 .build();
     }
 
     @GetMapping("/{userId}")
-    public Response<UserResponse> getOne(@PathVariable("userId") String userId) {
+    public Response<UserResponse> getOne(
+            @PathVariable("userId") String userId,
+            @RequestParam(defaultValue = "false", required = false) boolean compact) {
         return Response.<UserResponse>builder()
                 .success(true)
-                .data(userService.getOne(userId))
-                .build();
-    }
-
-    @GetMapping("/me")
-    public Response<UserResponse> getCurrentUser() {
-        return Response.<UserResponse>builder()
-                .success(true)
-                .data(userService.getCurrentUser())
+                .data(userService.getOne(userId, compact))
                 .build();
     }
 
@@ -67,7 +62,4 @@ public class UserController {
 
         return Response.<Void>builder().success(true).build();
     }
-
-    // CAMPAIGN
-
 }

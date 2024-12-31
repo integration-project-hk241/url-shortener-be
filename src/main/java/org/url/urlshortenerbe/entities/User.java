@@ -29,6 +29,6 @@ public class User {
     @Column(nullable = false)
     private String lastName;
 
-    @OneToMany
+    @ManyToMany
     private Set<Role> roles;
 }

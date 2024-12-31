@@ -14,7 +14,8 @@ import lombok.*;
 @Entity
 public class Url {
     @Id
-    private String shortUrl;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
 
     @Column(nullable = false)
     private String longUrl;
@@ -24,6 +25,12 @@ public class Url {
 
     @Column(nullable = false)
     private Date expiresAt;
+
+    @Column(nullable = false, unique = true)
+    private String hash;
+
+    @Column(nullable = false)
+    private boolean deleted = Boolean.FALSE;
 
     @ManyToOne
     @JoinColumn(name = "user_id")

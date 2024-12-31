@@ -1,6 +1,7 @@
 package org.url.urlshortenerbe.configs;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.boot.ApplicationRunner;
@@ -30,66 +31,108 @@ public class Boostrap {
     @Bean
     ApplicationRunner init() {
         return args -> {
+            Set<Role> adminRoles = new HashSet<>();
+
             Set<Permission> adminPermissions = new HashSet<>();
             Set<Permission> userPermissions = new HashSet<>();
+            Set<Permission> managerPermissions = new HashSet<>();
 
-            Role adminRole = roleRepository.findById("ADMIN").orElseGet(() -> Role.builder()
-                    .name("ADMIN")
-                    .description("Administrator role")
-                    .build());
+            List<String> roles = List.of("ADMIN", "MANAGER", "USER");
+            List<String> permissions = List.of(
+                    // USER
+                    "CREATE_USER",
+                    "READ_USER",
+                    "UPDATE_USER",
+                    "DELETE_USER",
+                    "MANAGE_USER",
 
-            Role userRole = roleRepository
-                    .findById("USER")
-                    .orElseGet(() ->
-                            Role.builder().name("USER").description("User role").build());
+                    // ROLE
+                    "CREATE_ROLE",
+                    "READ_ROLE",
+                    "UPDATE_ROLE",
+                    "DELETE_ROLE",
+                    "MANAGE_ROLE",
 
-            adminPermissions.add(
-                    permissionRepository.findById("MANAGE_PERMISSIONS").orElseGet(() -> Permission.builder()
-                            .name("MANAGE_PERMISSIONS")
-                            .description("Manage permissions for admin")
-                            .build()));
+                    // PERMISSIONS
+                    "CREATE_PERMISSION",
+                    "READ_PERMISSION",
+                    "UPDATE_PERMISSION",
+                    "DELETE_PERMISSION",
+                    "MANAGE_PERMISSION",
 
-            adminPermissions.add(permissionRepository.findById("MANAGE_ROLES").orElseGet(() -> Permission.builder()
-                    .name("MANAGE_ROLES")
-                    .description("Manage roles for admin")
-                    .build()));
+                    // URL
+                    "CREATE_URL",
+                    "READ_URL",
+                    "UPDATE_URL",
+                    "DELETE_URL",
+                    "MANAGE_URL",
 
-            adminPermissions.add(permissionRepository.findById("MANAGE_USERS").orElseGet(() -> Permission.builder()
-                    .name("MANAGE_USERS")
-                    .description("Manage users for admin")
-                    .build()));
+                    // CAMPAIGN
+                    "CREATE_CAMPAIGN",
+                    "READ_CAMPAIGN",
+                    "UPDATE_CAMPAIGN",
+                    "DELETE_CAMPAIGN",
+                    "MANAGE_CAMPAIGN");
 
-            userPermissions.add(permissionRepository.findById("VIEW_URLS").orElseGet(() -> Permission.builder()
-                    .name("VIEW_URLS")
-                    .description("View products for users")
-                    .build()));
+            permissions.forEach(permission -> {
+                Permission permissionEntity = permissionRepository
+                        .findById(permission)
+                        .orElse(Permission.builder()
+                                .name(permission)
+                                .description(permission)
+                                .build());
 
-            // Save admin permissions to the repository
-            permissionRepository.saveAll(adminPermissions);
-            adminRole.setPermissions(adminPermissions);
+                permissionEntity = permissionRepository.save(permissionEntity);
 
-            // Save user permissions
-            permissionRepository.saveAll(userPermissions);
-            userRole.setPermissions(userPermissions);
+                if (permission.contains("MANAGE")) {
+                    adminPermissions.add(permissionEntity);
+                    // skip this if face the permission with "MANAGE" in it
+                    return;
+                }
 
-            // Save admin role
-            roleRepository.save(adminRole);
-            // Save user role
-            roleRepository.save(userRole);
+                if (permission.contains("URL") || permission.equals("UPDATE_USER")) {
+                    userPermissions.add(permissionEntity);
+                    managerPermissions.add(permissionEntity);
+                }
 
-            if (userRepository.findByEmail("admin@admin.com").isEmpty()) {
-                User user = User.builder()
-                        .email("admin@admin.com")
-                        .password(passwordEncoder.encode("admin"))
-                        .roles(Set.of(adminRole))
-                        .firstName("admin")
-                        .lastName("admin")
-                        .build();
+                if (permission.contains("CAMPAIGN")) {
+                    managerPermissions.add(permissionEntity);
+                }
+            });
 
-                userRepository.save(user);
+            roles.forEach(role -> {
+                Role roleEntity = roleRepository
+                        .findById(role)
+                        .orElse(Role.builder().name(role).description(role).build());
 
-                log.info("Created admin user with username and password admin:admin");
+                switch (role) {
+                    case "ADMIN" -> roleEntity.setPermissions(adminPermissions);
+                    case "MANAGER" -> roleEntity.setPermissions(managerPermissions);
+                    case "USER" -> roleEntity.setPermissions(userPermissions);
+                }
+
+                roleEntity = roleRepository.save(roleEntity);
+
+                if (role.equals("ADMIN")) {
+                    adminRoles.add(roleEntity);
+                }
+            });
+
+            if (userRepository.existsByEmail("admin@admin.com")) {
+                return;
             }
+
+            User user = User.builder()
+                    .email("admin@admin.com")
+                    .password(passwordEncoder.encode("admin"))
+                    .roles(adminRoles)
+                    .firstName("admin")
+                    .lastName("admin")
+                    .build();
+
+            userRepository.save(user);
+
+            log.info("Created admin user with username and password admin:admin");
         };
     }
 }
