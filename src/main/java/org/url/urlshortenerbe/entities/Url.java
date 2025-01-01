@@ -2,10 +2,7 @@ package org.url.urlshortenerbe.entities;
 
 import java.util.Date;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 
 import lombok.*;
 
@@ -17,7 +14,8 @@ import lombok.*;
 @Entity
 public class Url {
     @Id
-    private String shortUrl;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
 
     @Column(nullable = false)
     private String longUrl;
@@ -28,6 +26,17 @@ public class Url {
     @Column(nullable = false)
     private Date expiresAt;
 
-    @ManyToOne
+    @Column(nullable = false, unique = true)
+    private String hash;
+
+    @Column(nullable = false)
+    private boolean deleted = Boolean.FALSE;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
     private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "campaign_id")
+    private Campaign campaign;
 }

@@ -12,6 +12,7 @@ import org.url.urlshortenerbe.dtos.requests.RevokeTokenRequest;
 import org.url.urlshortenerbe.dtos.responses.AuthenticationResponse;
 import org.url.urlshortenerbe.dtos.responses.IntrospectTokenResponse;
 import org.url.urlshortenerbe.dtos.responses.Response;
+import org.url.urlshortenerbe.dtos.responses.UserResponse;
 import org.url.urlshortenerbe.services.AuthenticationService;
 
 import com.nimbusds.jose.JOSEException;
@@ -43,8 +44,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/revoke")
-    public Response<Void> revokeToken(@RequestBody @Valid RevokeTokenRequest revokeTokenRequest)
-            throws ParseException, JOSEException {
+    public Response<Void> revokeToken(@RequestBody @Valid RevokeTokenRequest revokeTokenRequest) {
         authenticationService.revokeToken(revokeTokenRequest);
 
         return Response.<Void>builder().success(true).build();
@@ -56,6 +56,14 @@ public class AuthenticationController {
         return Response.<AuthenticationResponse>builder()
                 .success(true)
                 .data(authenticationService.refreshToken(refreshTokenRequest))
+                .build();
+    }
+
+    @GetMapping("/me")
+    public Response<UserResponse> getCurrentUser() {
+        return Response.<UserResponse>builder()
+                .success(true)
+                .data(authenticationService.getCurrentUser())
                 .build();
     }
 }

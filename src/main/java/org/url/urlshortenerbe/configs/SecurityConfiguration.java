@@ -27,34 +27,107 @@ public class SecurityConfiguration {
     private final CustomJwtDecoder customJwtDecoder;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
-    private final String[] PUBLIC_ENDPOINTS = {
+    private static final String[] POST_PUBLIC_ENDPOINTS = {
         // Allows to create user (register) for everyone
         API_PREFIX + "/users",
 
         // Allow login (get token) and introspect token
-        API_PREFIX + "/auth/token",
-        API_PREFIX + "/auth/introspect",
-        API_PREFIX + "/auth/revoke",
-        API_PREFIX + "/auth/refresh",
+        API_PREFIX + "/auth/**",
 
         // Allow url origin
         API_PREFIX + "/urls"
     };
 
+    private final String[] GET_PUBLIC_ENDPOINTS = {API_PREFIX + "/auth/me", "/{hash}"};
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.authorizeHttpRequests(auth -> auth
-                // Allow all public endpoints
-                .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS)
+                // Allow POST public endpoints
+                .requestMatchers(HttpMethod.POST, POST_PUBLIC_ENDPOINTS)
                 .permitAll()
 
-                // Allow only Admin
-                .requestMatchers(HttpMethod.GET, "/users")
-                .hasRole("ADMIN")
-
-                // Allow normal users to get the link
-                .requestMatchers(HttpMethod.GET, "/{shortUrl}")
+                // Allow GET public endpoints accessible to everyone
+                .requestMatchers(HttpMethod.GET, GET_PUBLIC_ENDPOINTS)
                 .permitAll()
+
+                // /users endpoints
+                .requestMatchers(HttpMethod.GET, API_PREFIX + "/users")
+                .hasAuthority("MANAGE_USER")
+                .requestMatchers(HttpMethod.PUT, API_PREFIX + "/users")
+                .hasAnyAuthority("UPDATE_USER", "MANAGE_USER")
+                .requestMatchers(HttpMethod.DELETE, API_PREFIX + "/users")
+                .hasAuthority("MANAGE_USER")
+
+                // /roles endpoints
+                .requestMatchers(HttpMethod.POST, API_PREFIX + "/roles")
+                .hasAuthority("MANAGE_ROLE")
+                .requestMatchers(HttpMethod.GET, API_PREFIX + "/roles")
+                .hasAuthority("MANAGE_ROLE")
+                .requestMatchers(HttpMethod.PUT, API_PREFIX + "/roles")
+                .hasAuthority("MANAGE_ROLE")
+                .requestMatchers(HttpMethod.DELETE, API_PREFIX + "/roles")
+                .hasAuthority("MANAGE_ROLE")
+
+                // /permissions endpoints
+                .requestMatchers(HttpMethod.POST, API_PREFIX + "/permissions")
+                .hasAuthority("MANAGE_PERMISSION")
+                .requestMatchers(HttpMethod.GET, API_PREFIX + "/permissions")
+                .hasAuthority("MANAGE_PERMISSION")
+                .requestMatchers(HttpMethod.PUT, API_PREFIX + "/permissions")
+                .hasAuthority("MANAGE_PERMISSION")
+                .requestMatchers(HttpMethod.DELETE, API_PREFIX + "/permissions")
+                .hasAuthority("MANAGE_PERMISSION")
+
+                // /urls endpoints
+                // The POST at /urls is already allowed in the list GET_PUBLIC_ENDPOINTS
+                .requestMatchers(HttpMethod.GET, API_PREFIX + "/urls")
+                .hasAuthority("MANAGE_URL")
+                .requestMatchers(HttpMethod.PUT, API_PREFIX + "/urls")
+                .hasAuthority("MANAGE_URL")
+                .requestMatchers(HttpMethod.DELETE, API_PREFIX + "/urls")
+                .hasAuthority("MANAGE_URL")
+
+                // /campaigns endpoints
+                .requestMatchers(HttpMethod.GET, API_PREFIX + "/campaigns")
+                .hasAuthority("MANAGE_CAMPAIGN")
+                // todo: implement put and delete endpoints too
+                // todo: moreover implement soft delete on /users, /urls, /campaigns
+
+                // business logic
+                // /users/{userId}/urls for normal user, manager and admin
+                .requestMatchers(HttpMethod.POST, API_PREFIX + "/users/{userId}/urls")
+                .hasAnyAuthority("CREATE_URL", "MANAGE_URL")
+                .requestMatchers(HttpMethod.GET, API_PREFIX + "/users/{userId}/urls")
+                .hasAnyAuthority("READ_URL", "MANAGE_URL")
+                .requestMatchers(HttpMethod.PUT, API_PREFIX + "/users/{userId}/urls")
+                .hasAnyAuthority("UPDATE_URL", "MANAGE_URL")
+                .requestMatchers(HttpMethod.DELETE, API_PREFIX + "/users/{userId}/urls")
+                .hasAnyAuthority("DELETE_URL", "MANAGE_URL")
+
+                // /users/{userId}/campaigns/{campaignId}/urls for manager and admin
+                .requestMatchers(
+                        HttpMethod.POST,
+                        API_PREFIX + "/users/{userId}/campaigns",
+                        API_PREFIX + "/users/{userId}/campaigns/{campaignId}/urls")
+                .hasAnyAuthority("CREATE_CAMPAIGN", "MANAGE_CAMPAIGN")
+                .requestMatchers(
+                        HttpMethod.GET,
+                        API_PREFIX + "/users/{userId}/campaigns",
+                        API_PREFIX + "/users/{userId}/campaigns/{campaignId}/urls",
+                        // Where to get the stats of url within a campaign
+                        API_PREFIX + "/users/{userId}/campaigns/{campaignId}/urls/stats")
+                .hasAnyAuthority("READ_CAMPAIGN", "MANAGE_CAMPAIGN")
+                .requestMatchers(
+                        HttpMethod.PUT,
+                        API_PREFIX + "/users/{userId}/campaigns",
+                        API_PREFIX + "/users/{userId}/campaigns/{campaignId}/urls")
+                .hasAnyAuthority("UPDATE_CAMPAIGN", "MANAGE_CAMPAIGN")
+                .requestMatchers(
+                        HttpMethod.DELETE,
+                        API_PREFIX + "/users/{userId}/campaigns",
+                        API_PREFIX + "/users/{userId}/campaigns/{campaignId}/urls")
+                .hasAnyAuthority("DELETE_CAMPAIGN", "MANAGE_CAMPAIGN")
 
                 // any other requests must be authenticated
                 .anyRequest()

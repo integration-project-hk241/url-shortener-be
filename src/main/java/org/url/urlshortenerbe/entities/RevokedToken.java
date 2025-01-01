@@ -2,6 +2,7 @@ package org.url.urlshortenerbe.entities;
 
 import java.util.Date;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 
@@ -17,5 +18,6 @@ public class RevokedToken {
     @Id
     String id;
 
+    @Column(nullable = false)
     Date expiryDate;
 }

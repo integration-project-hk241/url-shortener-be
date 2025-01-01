@@ -17,7 +17,5 @@ public class PermissionUpdateRequest {
     @NotBlank(message = "Permission name cannot be blank")
     String name;
 
-    @Size(min = 4, max = 50, message = "Permission description length must be between 4 and 50 characters")
-    @NotBlank(message = "Permission description cannot be blank")
     String description;
 }

@@ -1,6 +1,6 @@
 package org.url.urlshortenerbe.dtos.responses;
 
-import java.util.Set;
+import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
@@ -14,10 +14,18 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class RoleResponse {
+public class CampaignResponse {
+    private String id;
+
     private String name;
+
+    private Date startDate;
+
+    private Date endDate;
 
     private String description;
 
-    private Set<PermissionResponse> permissions;
+    private String userId;
+
+    private Boolean deleted;
 }

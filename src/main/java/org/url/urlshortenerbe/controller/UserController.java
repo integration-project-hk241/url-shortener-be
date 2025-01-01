@@ -19,7 +19,7 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
-    Response<UserResponse> create(@RequestBody @Valid UserCreationRequest userCreationRequest) {
+    public Response<UserResponse> create(@RequestBody @Valid UserCreationRequest userCreationRequest) {
         return Response.<UserResponse>builder()
                 .success(true)
                 .data(userService.create(userCreationRequest))
@@ -27,33 +27,29 @@ public class UserController {
     }
 
     @GetMapping
-    Response<PageResponse<UserResponse>> getAll(
+    public Response<PageResponse<UserResponse>> getAll(
             @RequestParam(defaultValue = "1", required = false) int page,
-            @RequestParam(defaultValue = "10", required = false) int size) {
+            @RequestParam(defaultValue = "10", required = false) int size,
+            @RequestParam(defaultValue = "false", required = false) boolean compact,
+            @RequestParam(defaultValue = "not_deleted", required = false) String type) {
         return Response.<PageResponse<UserResponse>>builder()
                 .success(true)
-                .data(userService.getAll(page, size))
+                .data(userService.getAll(page, size, compact, type))
                 .build();
     }
 
     @GetMapping("/{userId}")
-    Response<UserResponse> getOne(@PathVariable("userId") String userId) {
+    public Response<UserResponse> getOne(
+            @PathVariable("userId") String userId,
+            @RequestParam(defaultValue = "false", required = false) boolean compact) {
         return Response.<UserResponse>builder()
                 .success(true)
-                .data(userService.getOne(userId))
-                .build();
-    }
-
-    @GetMapping("/me")
-    public Response<UserResponse> getCurrentUser() {
-        return Response.<UserResponse>builder()
-                .success(true)
-                .data(userService.getCurrentUser())
+                .data(userService.getOne(userId, compact))
                 .build();
     }
 
     @PutMapping("/{userId}")
-    Response<UserResponse> update(
+    public Response<UserResponse> update(
             @PathVariable("userId") String userId, @RequestBody @Valid UserUpdateRequest userUpdateRequest) {
         return Response.<UserResponse>builder()
                 .success(true)
@@ -62,7 +58,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{userId}")
-    Response<Void> delete(@PathVariable("userId") String userId) {
+    public Response<Void> delete(@PathVariable("userId") String userId) {
         userService.delete(userId);
 
         return Response.<Void>builder().success(true).build();

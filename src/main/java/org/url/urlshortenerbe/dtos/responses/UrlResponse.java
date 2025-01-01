@@ -2,6 +2,8 @@ package org.url.urlshortenerbe.dtos.responses;
 
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,12 +13,19 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class UrlResponse {
-    private String shortUrl;
-
     private String longUrl;
 
     private Date createdAt;
 
-    private Date lastVisit;
+    private Date expiresAt;
+
+    private String userId;
+
+    private String hash;
+
+    private String campaignId;
+
+    private Boolean deleted;
 }

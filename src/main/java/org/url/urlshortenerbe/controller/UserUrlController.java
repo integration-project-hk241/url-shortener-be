@@ -13,61 +13,57 @@ import org.url.urlshortenerbe.dtos.responses.UrlResponse;
 import org.url.urlshortenerbe.services.UrlService;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @RestController
-@RequestMapping("${api.prefix}/urls")
+@RequestMapping("${api.prefix}/users/{userId}/urls")
 @RequiredArgsConstructor
-public class UrlController {
+public class UserUrlController {
     private final UrlService urlService;
 
-    // Create url for guest
     @PostMapping
-    public Response<UrlResponse> create(@RequestBody @Valid UrlCreationRequest urlCreationRequest)
+    public Response<UrlResponse> createWithUserId(
+            @PathVariable String userId, @RequestBody @Valid UrlCreationRequest urlCreationRequest)
             throws NoSuchAlgorithmException {
-        log.error(urlCreationRequest.toString());
         return Response.<UrlResponse>builder()
                 .success(true)
-                .data(urlService.createForGuest(urlCreationRequest))
+                .data(urlService.createWithUserId(userId, urlCreationRequest))
                 .build();
     }
 
-    // Get all urls for admin
     @GetMapping
-    public Response<PageResponse<UrlResponse>> getAll(
-            @RequestParam(defaultValue = "1", required = false) int page,
-            @RequestParam(defaultValue = "10", required = false) int size,
+    public Response<PageResponse<UrlResponse>> getAllByUserId(
+            @PathVariable String userId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "not_deleted", required = false) String type) {
         return Response.<PageResponse<UrlResponse>>builder()
                 .success(true)
-                .data(urlService.getAll(page, size, type))
+                .data(urlService.getAllByUserId(userId, page, size, type))
                 .build();
     }
 
-    // Get an url for admin view
     @GetMapping("/{hash}")
-    public Response<UrlResponse> get(@PathVariable String hash) {
+    public Response<UrlResponse> getOneByHashAndUserId(@PathVariable String hash, @PathVariable String userId) {
         return Response.<UrlResponse>builder()
                 .success(true)
-                .data(urlService.getOne(hash))
+                .data(urlService.getOneByHashAndUserId(hash, userId))
                 .build();
     }
 
-    // Update an url for admin view
     @PutMapping("/{hash}")
-    public Response<UrlResponse> update(
-            @PathVariable String hash, @RequestBody @Valid UrlUpdateRequest urlUpdateRequest) {
+    public Response<UrlResponse> updateOneByHashAndUserId(
+            @PathVariable String hash,
+            @PathVariable String userId,
+            @RequestBody @Valid UrlUpdateRequest urlUpdateRequest) {
         return Response.<UrlResponse>builder()
                 .success(true)
-                .data(urlService.update(hash, urlUpdateRequest))
+                .data(urlService.updateOneByHashAndUserId(hash, userId, urlUpdateRequest))
                 .build();
     }
 
-    // Delete an url for admin view
     @DeleteMapping("/{hash}")
-    public Response<Void> delete(@PathVariable String hash) {
-        urlService.delete(hash);
+    public Response<Void> deleteOneByHash(@PathVariable String hash, @PathVariable String userId) {
+        urlService.deleteOneByHashAndUserId(hash, userId);
 
         return Response.<Void>builder().success(true).build();
     }
