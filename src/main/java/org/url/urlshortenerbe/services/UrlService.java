@@ -5,18 +5,19 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.url.urlshortenerbe.dtos.requests.UrlCreationRequest;
 import org.url.urlshortenerbe.dtos.requests.UrlUpdateRequest;
 import org.url.urlshortenerbe.dtos.responses.PageResponse;
+import org.url.urlshortenerbe.dtos.responses.Response;
 import org.url.urlshortenerbe.dtos.responses.UrlResponse;
 import org.url.urlshortenerbe.entities.Campaign;
 import org.url.urlshortenerbe.entities.Url;
@@ -67,7 +68,11 @@ public class UrlService {
 
     public UrlResponse createWithUserId(String userId, UrlCreationRequest urlCreationRequest)
             throws NoSuchAlgorithmException {
-        User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOTFOUND));
+        User user = getCorrectUser(userId);
+
+        if (null == user) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
 
         Url url = create(urlCreationRequest);
         url.setUser(user);
@@ -79,10 +84,20 @@ public class UrlService {
 
     public UrlResponse createWithCampaignIdAndUserId(
             String campaignId, String userId, UrlCreationRequest urlCreationRequest) throws NoSuchAlgorithmException {
-        User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOTFOUND));
+        User user = getCorrectUser(userId);
+
+        if (null == user) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
         Campaign campaign = campaignRepository
                 .findById(campaignId)
                 .orElseThrow(() -> new AppException(ErrorCode.CAMPAIGN_NOTFOUND));
+
+        // Handle the case when campaign is deleted
+        if (campaign.getDeleted()) {
+            throw new AppException(ErrorCode.CAMPAIGN_NOTFOUND);
+        }
 
         Url url = create(urlCreationRequest);
         url.setUser(user);
@@ -96,18 +111,12 @@ public class UrlService {
     public PageResponse<UrlResponse> getAll(int page, int size, String type) {
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        Page<Url> urls = null;
-
-        switch (type) {
-            case "all":
-                urls = urlRepository.findAll(pageable);
-            case "not_deleted":
-                urls = urlRepository.findAllByDeletedIs(false, pageable);
-            case "deleted":
-                urls = urlRepository.findAllByDeletedIs(true, pageable);
-            default:
-                urls = urlRepository.findAll(pageable);
-        }
+        Page<Url> urls =
+                switch (type) {
+                    case "not_deleted" -> urlRepository.findAllByDeletedIs(false, pageable);
+                    case "deleted" -> urlRepository.findAllByDeletedIs(true, pageable);
+                    default -> urlRepository.findAll(pageable);
+                };
 
         List<UrlResponse> urlResponseList =
                 urls.getContent().stream().map(urlMapper::toUrlResponse).toList();
@@ -120,14 +129,21 @@ public class UrlService {
                 .build();
     }
 
-    public PageResponse<UrlResponse> getAllByUserId(String userId, int page, int size) {
-        if (!userRepository.existsById(userId)) {
-            throw new AppException(ErrorCode.USER_NOTFOUND);
+    public PageResponse<UrlResponse> getAllByUserId(String userId, int page, int size, String type) {
+        User user = getCorrectUser(userId);
+
+        if (null == user) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        Page<Url> urls = urlRepository.findAllByUserId(userId, pageable);
+        Page<Url> urls =
+                switch (type) {
+                    case ("not_deleted") -> urlRepository.findAllByUserIdAndDeletedIs(userId, false, pageable);
+                    case ("deleted") -> urlRepository.findAllByUserIdAndDeletedIs(userId, true, pageable);
+                    default -> urlRepository.findAllByUserId(userId, pageable);
+                };
 
         List<UrlResponse> urlResponseList = urls.getContent().stream()
                 .map((url) -> {
@@ -146,10 +162,24 @@ public class UrlService {
                 .build();
     }
 
-    public PageResponse<UrlResponse> getAllByCampaignIdAndUserId(String campaignId, String userId, int page, int size) {
+    public PageResponse<UrlResponse> getAllByCampaignIdAndUserId(
+            String campaignId, String userId, int page, int size, String type) {
+        User user = getCorrectUser(userId);
+
+        if (null == user) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        Page<Url> urls = urlRepository.findAllByCampaignIdAndUserId(campaignId, userId, pageable);
+        Page<Url> urls =
+                switch (type) {
+                    case ("not_deleted") -> urlRepository.findAllByCampaignIdAndUserIdAndDeletedIs(
+                            campaignId, userId, false, pageable);
+                    case ("deleted") -> urlRepository.findAllByCampaignIdAndUserIdAndDeletedIs(
+                            campaignId, userId, true, pageable);
+                    default -> urlRepository.findAllByCampaignIdAndUserId(campaignId, userId, pageable);
+                };
 
         List<UrlResponse> urlResponseList = urls.getContent().stream()
                 .map((url) -> {
@@ -174,9 +204,11 @@ public class UrlService {
         return urlMapper.toUrlResponse(url);
     }
 
-    public UrlResponse getOneByIdAndUserId(String hash, String userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new AppException(ErrorCode.USER_NOTFOUND);
+    public UrlResponse getOneByHashAndUserId(String hash, String userId) {
+        User user = getCorrectUser(userId);
+
+        if (null == user) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
         Url url = urlRepository
@@ -191,11 +223,13 @@ public class UrlService {
     }
 
     public UrlResponse getOneByIdAndCampaignIdAndUserId(String hash, String campaignId, String userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new AppException(ErrorCode.USER_NOTFOUND);
+        User user = getCorrectUser(userId);
+
+        if (null == user) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
-        if (campaignRepository.existsByIdAndUserId(campaignId, userId)) {
+        if (!campaignRepository.existsByIdAndUserId(campaignId, userId)) {
             throw new AppException(ErrorCode.CAMPAIGN_NOTFOUND);
         }
 
@@ -220,8 +254,10 @@ public class UrlService {
     }
 
     public UrlResponse updateOneByHashAndUserId(String hash, String userId, UrlUpdateRequest urlUpdateRequest) {
-        if (!userRepository.existsById(userId)) {
-            throw new AppException(ErrorCode.USER_NOTFOUND);
+        User user = getCorrectUser(userId);
+
+        if (null == user) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
         Url url = urlRepository
@@ -229,6 +265,7 @@ public class UrlService {
                 .orElseThrow(() -> new AppException(ErrorCode.URL_NOTFOUND));
 
         urlMapper.updateUrl(url, urlUpdateRequest);
+        url.setHash(urlUpdateRequest.getAlias());
 
         url = urlRepository.save(url);
 
@@ -241,11 +278,13 @@ public class UrlService {
 
     public UrlResponse updateOneByHashAndCampaignIdAndUserId(
             String hash, String campaignId, String userId, UrlUpdateRequest urlUpdateRequest) {
-        if (!userRepository.existsById(userId)) {
-            throw new AppException(ErrorCode.USER_NOTFOUND);
+        User user = getCorrectUser(userId);
+
+        if (null == user) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
-        if (campaignRepository.existsByIdAndUserId(campaignId, userId)) {
+        if (!campaignRepository.existsByIdAndUserId(campaignId, userId)) {
             throw new AppException(ErrorCode.CAMPAIGN_NOTFOUND);
         }
 
@@ -254,6 +293,7 @@ public class UrlService {
                 .orElseThrow(() -> new AppException(ErrorCode.URL_NOTFOUND));
 
         urlMapper.updateUrl(url, urlUpdateRequest);
+        url.setHash(urlUpdateRequest.getAlias());
 
         url = urlRepository.save(url);
 
@@ -272,23 +312,39 @@ public class UrlService {
     }
 
     public void deleteOneByHashAndUserId(String hash, String userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new AppException(ErrorCode.USER_NOTFOUND);
+        User user = getCorrectUser(userId);
+
+        if (null == user) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
-        urlRepository.deleteByHashAndUserId(hash, userId);
+        Url url = urlRepository
+                .findByHashAndUserId(hash, userId)
+                .orElseThrow(() -> new AppException(ErrorCode.URL_NOTFOUND));
+
+        // Soft delete the url
+        url.setDeleted(true);
+        urlRepository.save(url);
     }
 
     public void deleteOneByHashAndCampaignIdAndUserId(String hash, String campaignId, String userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new AppException(ErrorCode.USER_NOTFOUND);
+        User user = getCorrectUser(userId);
+
+        if (null == user) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
-        if (campaignRepository.existsByIdAndUserId(campaignId, userId)) {
+        if (!campaignRepository.existsByIdAndUserId(campaignId, userId)) {
             throw new AppException(ErrorCode.CAMPAIGN_NOTFOUND);
         }
 
-        urlRepository.deleteByHashAndCampaignIdAndUserId(hash, campaignId, userId);
+        // Soft delete the url
+        Url url = urlRepository
+                .findByHashAndCampaignIdAndUserId(hash, campaignId, userId)
+                .orElseThrow(() -> new AppException(ErrorCode.URL_NOTFOUND));
+        url.setDeleted(true);
+
+        urlRepository.save(url);
     }
 
     private Url getUrlByHash(String hash) {
@@ -366,5 +422,52 @@ public class UrlService {
             salt.append(SALTCHARS.charAt(index));
         }
         return salt.toString();
+    }
+
+    private User getCorrectUser(String userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOTFOUND));
+
+        SecurityContext securityContext = SecurityContextHolder.getContext();
+        String email = securityContext.getAuthentication().getName();
+
+        if (!user.getEmail().equals(email)) {
+            return null;
+        }
+
+        return user;
+    }
+
+    public Response<List<Map<String, Object>>> getMostClickedUrlsByCampaign(
+            String campaignId, String userId, Date startDate, Date endDate) {
+        User user = getCorrectUser(userId);
+
+        if (null == user) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
+        if (!campaignRepository.existsById(campaignId)) {
+            throw new AppException(ErrorCode.CAMPAIGN_NOTFOUND);
+        }
+
+        List<Object[]> result = urlRepository.findMostClickedUrlsByCampaignIdAndUserIdAndDateRange(
+                campaignId, userId, startDate, endDate);
+
+        // Convert result to a more readable format
+        List<Map<String, Object>> response = new ArrayList<>();
+        for (Object[] row : result) {
+            Url url = (Url) row[0];
+            Long clickCount = (Long) row[1];
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("url", urlMapper.toUrlResponse(url));
+            data.put("clickCount", clickCount);
+
+            response.add(data);
+        }
+
+        return Response.<List<Map<String, Object>>>builder()
+                .success(true)
+                .data(response)
+                .build();
     }
 }

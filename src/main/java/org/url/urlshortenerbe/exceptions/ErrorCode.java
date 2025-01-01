@@ -14,6 +14,7 @@ public enum ErrorCode {
     USER_EXISTED(1002, "User existed", HttpStatus.BAD_REQUEST),
     UNAUTHENTICATED(1002, "Unauthenticated", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED(1002, "Unauthorized", HttpStatus.FORBIDDEN),
+    USER_BANNED(1002, "Sorry but you are banned due to policy violation", HttpStatus.UNAUTHORIZED),
 
     // REGISTER ERROR CODES
     USERNAME_INVALID(1002, "Username must be at least 3 characters", HttpStatus.BAD_REQUEST),

@@ -3,6 +3,7 @@ package org.url.urlshortenerbe.dtos.requests;
 import java.util.Date;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import lombok.AllArgsConstructor;
@@ -19,7 +20,7 @@ public class CampaignUpdateRequest {
     @NotBlank(message = "Campaign name cannot be blank")
     private String name;
 
-    @NotBlank(message = "The end date is required and cannot be blank")
+    @NotNull(message = "The end date is required and cannot be blank")
     private Date endDate;
 
     private String description;

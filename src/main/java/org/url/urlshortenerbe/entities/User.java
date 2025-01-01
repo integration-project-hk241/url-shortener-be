@@ -17,7 +17,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, updatable = false)
     private String email;
 
     @Column(nullable = false)
@@ -29,6 +29,9 @@ public class User {
     @Column(nullable = false)
     private String lastName;
 
-    @ManyToMany
+    @Column(nullable = false)
+    private Boolean banned = Boolean.FALSE;
+
+    @ManyToMany(fetch = FetchType.LAZY)
     private Set<Role> roles;
 }

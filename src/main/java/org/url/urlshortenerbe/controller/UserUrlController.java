@@ -34,10 +34,11 @@ public class UserUrlController {
     public Response<PageResponse<UrlResponse>> getAllByUserId(
             @PathVariable String userId,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "not_deleted", required = false) String type) {
         return Response.<PageResponse<UrlResponse>>builder()
                 .success(true)
-                .data(urlService.getAllByUserId(userId, page, size))
+                .data(urlService.getAllByUserId(userId, page, size, type))
                 .build();
     }
 
@@ -45,7 +46,7 @@ public class UserUrlController {
     public Response<UrlResponse> getOneByHashAndUserId(@PathVariable String hash, @PathVariable String userId) {
         return Response.<UrlResponse>builder()
                 .success(true)
-                .data(urlService.getOneByIdAndUserId(hash, userId))
+                .data(urlService.getOneByHashAndUserId(hash, userId))
                 .build();
     }
 

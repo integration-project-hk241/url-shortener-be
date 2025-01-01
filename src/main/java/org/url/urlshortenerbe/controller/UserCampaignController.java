@@ -13,7 +13,7 @@ import org.url.urlshortenerbe.services.CampaignService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/users/{userId}/campaigns")
+@RequestMapping("${api.prefix}/users/{userId}/campaigns")
 @RequiredArgsConstructor
 public class UserCampaignController {
     private final CampaignService campaignService;
@@ -33,10 +33,11 @@ public class UserCampaignController {
     public Response<PageResponse<CampaignResponse>> getCampaignsWithUserId(
             @PathVariable String userId,
             @RequestParam(defaultValue = "1", required = false) int page,
-            @RequestParam(defaultValue = "10", required = false) int size) {
+            @RequestParam(defaultValue = "10", required = false) int size,
+            @RequestParam(defaultValue = "not_deleted", required = false) String type) {
         return Response.<PageResponse<CampaignResponse>>builder()
                 .success(true)
-                .data(campaignService.getAllByUserId(userId, page, size))
+                .data(campaignService.getAllByUserId(userId, page, size, type))
                 .build();
     }
 

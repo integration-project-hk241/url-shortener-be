@@ -61,6 +61,7 @@ public class UserService {
         roles.add(userRole);
 
         user.setRoles(roles);
+        user.setBanned(false);
 
         // Save new user to database
         try {
@@ -69,15 +70,23 @@ public class UserService {
             throw new AppException(ErrorCode.USER_EXISTED);
         }
 
+        // Guest can't know the system information
         UserResponse userResponse = userMapper.toUserResponse(user);
-        userResponse.setRoles(roles.stream().map(roleMapper::toRoleResponse).collect(Collectors.toSet()));
+        userResponse.setRoles(null);
+        userResponse.setBanned(null);
 
         return userResponse;
     }
 
-    public PageResponse<UserResponse> getAll(int page, int size, boolean compact) {
+    public PageResponse<UserResponse> getAll(int page, int size, boolean compact, String type) {
         Pageable pageable = PageRequest.of(page - 1, size);
-        Page<User> users = userRepository.findAll(pageable);
+
+        Page<User> users =
+                switch (type) {
+                    case ("not_banned") -> userRepository.findAllByBannedIs(false, pageable);
+                    case ("banned") -> userRepository.findAllByBannedIs(true, pageable);
+                    default -> userRepository.findAll(pageable);
+                };
 
         List<UserResponse> userResponseList = users.getContent().stream()
                 .map(user -> mapRolesAndPermissionsToUserResponse(user, compact))
@@ -134,7 +143,10 @@ public class UserService {
         // find the user first
         User user = getUser(userId);
 
-        userRepository.delete(user);
+        // Soft delete user
+        user.setBanned(true);
+
+        userRepository.save(user);
     }
 
     private User getUser(String userId) {

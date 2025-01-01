@@ -52,6 +52,10 @@ public class AuthenticationService {
                 .findByEmail(authenticationRequest.getEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOTFOUND));
 
+        if (user.getBanned()) {
+            throw new AppException(ErrorCode.USER_BANNED);
+        }
+
         boolean authenticated = passwordEncoder.matches(authenticationRequest.getPassword(), user.getPassword());
 
         if (!authenticated) {

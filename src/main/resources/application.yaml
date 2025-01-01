@@ -11,12 +11,11 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
 
 jwt:
   signer-key: ZpVU2+KjVQEFSU6NgV9+2SRzhT5YuIsXMDgTbDcrf3Y7O+W/bYzhDwVzZSOviQwdnzGMK91zo6tAsoS+px3lkJluXeMLr0MnbhWAx7KelaI=
-  expiration-time: 120 #second
-  refresh_time: 12000 #second
+  expiration-time: 3600 #second 1 hour
+  refresh_time: 86400 #second 1 day
 
 url:
   length: 6 #characters

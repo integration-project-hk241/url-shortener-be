@@ -38,9 +38,7 @@ public class SecurityConfiguration {
         API_PREFIX + "/urls"
     };
 
-    private final String[] GET_PUBLIC_ENDPOINTS = {
-        API_PREFIX + "/auth/me", "/{hash}",
-    };
+    private final String[] GET_PUBLIC_ENDPOINTS = {API_PREFIX + "/auth/me", "/{hash}"};
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
@@ -54,72 +52,82 @@ public class SecurityConfiguration {
                 .permitAll()
 
                 // /users endpoints
-                .requestMatchers(HttpMethod.GET, "/users")
+                .requestMatchers(HttpMethod.GET, API_PREFIX + "/users")
                 .hasAuthority("MANAGE_USER")
-                .requestMatchers(HttpMethod.PUT, "/users")
-                .hasAuthority("MANAGE_USER")
-                .requestMatchers(HttpMethod.DELETE, "/users")
+                .requestMatchers(HttpMethod.PUT, API_PREFIX + "/users")
+                .hasAnyAuthority("UPDATE_USER", "MANAGE_USER")
+                .requestMatchers(HttpMethod.DELETE, API_PREFIX + "/users")
                 .hasAuthority("MANAGE_USER")
 
                 // /roles endpoints
-                .requestMatchers(HttpMethod.POST, "/roles")
+                .requestMatchers(HttpMethod.POST, API_PREFIX + "/roles")
                 .hasAuthority("MANAGE_ROLE")
-                .requestMatchers(HttpMethod.GET, "/roles")
+                .requestMatchers(HttpMethod.GET, API_PREFIX + "/roles")
                 .hasAuthority("MANAGE_ROLE")
-                .requestMatchers(HttpMethod.PUT, "/roles")
+                .requestMatchers(HttpMethod.PUT, API_PREFIX + "/roles")
                 .hasAuthority("MANAGE_ROLE")
-                .requestMatchers(HttpMethod.DELETE, "/roles")
+                .requestMatchers(HttpMethod.DELETE, API_PREFIX + "/roles")
                 .hasAuthority("MANAGE_ROLE")
 
                 // /permissions endpoints
-                .requestMatchers(HttpMethod.POST, "/permissions")
+                .requestMatchers(HttpMethod.POST, API_PREFIX + "/permissions")
                 .hasAuthority("MANAGE_PERMISSION")
-                .requestMatchers(HttpMethod.GET, "/permissions")
+                .requestMatchers(HttpMethod.GET, API_PREFIX + "/permissions")
                 .hasAuthority("MANAGE_PERMISSION")
-                .requestMatchers(HttpMethod.PUT, "/permissions")
+                .requestMatchers(HttpMethod.PUT, API_PREFIX + "/permissions")
                 .hasAuthority("MANAGE_PERMISSION")
-                .requestMatchers(HttpMethod.DELETE, "/permissions")
+                .requestMatchers(HttpMethod.DELETE, API_PREFIX + "/permissions")
                 .hasAuthority("MANAGE_PERMISSION")
 
                 // /urls endpoints
                 // The POST at /urls is already allowed in the list GET_PUBLIC_ENDPOINTS
-                .requestMatchers(HttpMethod.GET, "/urls")
+                .requestMatchers(HttpMethod.GET, API_PREFIX + "/urls")
                 .hasAuthority("MANAGE_URL")
-                .requestMatchers(HttpMethod.PUT, "/urls")
+                .requestMatchers(HttpMethod.PUT, API_PREFIX + "/urls")
                 .hasAuthority("MANAGE_URL")
-                .requestMatchers(HttpMethod.DELETE, "/urls")
+                .requestMatchers(HttpMethod.DELETE, API_PREFIX + "/urls")
                 .hasAuthority("MANAGE_URL")
 
                 // /campaigns endpoints
-                .requestMatchers(HttpMethod.GET, "/campaigns")
+                .requestMatchers(HttpMethod.GET, API_PREFIX + "/campaigns")
                 .hasAuthority("MANAGE_CAMPAIGN")
                 // todo: implement put and delete endpoints too
                 // todo: moreover implement soft delete on /users, /urls, /campaigns
 
                 // business logic
                 // /users/{userId}/urls for normal user, manager and admin
-                .requestMatchers(HttpMethod.POST, "/users/{userId}/urls")
-                .hasAuthority("CREATE_URL")
-                .requestMatchers(HttpMethod.GET, "/users/{userId}/urls")
-                .hasAuthority("READ_URL")
-                .requestMatchers(HttpMethod.PUT, "/users/{userId}/urls")
-                .hasAuthority("UPDATE_URL")
-                .requestMatchers(HttpMethod.DELETE, "/users/{userId}/urls")
-                .hasAuthority("DELETE_URL")
+                .requestMatchers(HttpMethod.POST, API_PREFIX + "/users/{userId}/urls")
+                .hasAnyAuthority("CREATE_URL", "MANAGE_URL")
+                .requestMatchers(HttpMethod.GET, API_PREFIX + "/users/{userId}/urls")
+                .hasAnyAuthority("READ_URL", "MANAGE_URL")
+                .requestMatchers(HttpMethod.PUT, API_PREFIX + "/users/{userId}/urls")
+                .hasAnyAuthority("UPDATE_URL", "MANAGE_URL")
+                .requestMatchers(HttpMethod.DELETE, API_PREFIX + "/users/{userId}/urls")
+                .hasAnyAuthority("DELETE_URL", "MANAGE_URL")
 
                 // /users/{userId}/campaigns/{campaignId}/urls for manager and admin
                 .requestMatchers(
-                        HttpMethod.POST, "/users/{userId}/campaigns/", "/users/{userId}/campaigns/{campaignId}/urls")
-                .hasAuthority("CREATE_CAMPAIGNS")
+                        HttpMethod.POST,
+                        API_PREFIX + "/users/{userId}/campaigns",
+                        API_PREFIX + "/users/{userId}/campaigns/{campaignId}/urls")
+                .hasAnyAuthority("CREATE_CAMPAIGN", "MANAGE_CAMPAIGN")
                 .requestMatchers(
-                        HttpMethod.GET, "/users/{userId}/campaigns/", "/users/{userId}/campaigns/{campaignId}/urls")
-                .hasAuthority("READ_CAMPAIGNS")
+                        HttpMethod.GET,
+                        API_PREFIX + "/users/{userId}/campaigns",
+                        API_PREFIX + "/users/{userId}/campaigns/{campaignId}/urls",
+                        // Where to get the stats of url within a campaign
+                        API_PREFIX + "/users/{userId}/campaigns/{campaignId}/urls/stats")
+                .hasAnyAuthority("READ_CAMPAIGN", "MANAGE_CAMPAIGN")
                 .requestMatchers(
-                        HttpMethod.PUT, "/users/{userId}/campaigns/", "/users/{userId}/campaigns/{campaignId}/urls")
-                .hasAuthority("UPDATE_CAMPAIGNS")
+                        HttpMethod.PUT,
+                        API_PREFIX + "/users/{userId}/campaigns",
+                        API_PREFIX + "/users/{userId}/campaigns/{campaignId}/urls")
+                .hasAnyAuthority("UPDATE_CAMPAIGN", "MANAGE_CAMPAIGN")
                 .requestMatchers(
-                        HttpMethod.DELETE, "/users/{userId}/campaigns/", "/users/{userId}/campaigns/{campaignId}/urls")
-                .hasAuthority("DELETE_CAMPAIGNS")
+                        HttpMethod.DELETE,
+                        API_PREFIX + "/users/{userId}/campaigns",
+                        API_PREFIX + "/users/{userId}/campaigns/{campaignId}/urls")
+                .hasAnyAuthority("DELETE_CAMPAIGN", "MANAGE_CAMPAIGN")
 
                 // any other requests must be authenticated
                 .anyRequest()

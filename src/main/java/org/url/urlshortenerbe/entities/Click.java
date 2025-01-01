@@ -23,7 +23,7 @@ public class Click {
 
     private String userAgent;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "url_id", nullable = false)
     private Url url;
 }

@@ -30,10 +30,11 @@ public class UserController {
     public Response<PageResponse<UserResponse>> getAll(
             @RequestParam(defaultValue = "1", required = false) int page,
             @RequestParam(defaultValue = "10", required = false) int size,
-            @RequestParam(defaultValue = "false", required = false) boolean compact) {
+            @RequestParam(defaultValue = "false", required = false) boolean compact,
+            @RequestParam(defaultValue = "not_deleted", required = false) String type) {
         return Response.<PageResponse<UserResponse>>builder()
                 .success(true)
-                .data(userService.getAll(page, size, compact))
+                .data(userService.getAll(page, size, compact, type))
                 .build();
     }
 

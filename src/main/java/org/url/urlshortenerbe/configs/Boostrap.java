@@ -32,6 +32,8 @@ public class Boostrap {
     ApplicationRunner init() {
         return args -> {
             Set<Role> adminRoles = new HashSet<>();
+            Set<Role> managerRoles = new HashSet<>();
+            Set<Role> userRoles = new HashSet<>();
 
             Set<Permission> adminPermissions = new HashSet<>();
             Set<Permission> userPermissions = new HashSet<>();
@@ -106,33 +108,65 @@ public class Boostrap {
                         .orElse(Role.builder().name(role).description(role).build());
 
                 switch (role) {
-                    case "ADMIN" -> roleEntity.setPermissions(adminPermissions);
-                    case "MANAGER" -> roleEntity.setPermissions(managerPermissions);
-                    case "USER" -> roleEntity.setPermissions(userPermissions);
-                }
-
-                roleEntity = roleRepository.save(roleEntity);
-
-                if (role.equals("ADMIN")) {
-                    adminRoles.add(roleEntity);
+                    case "ADMIN" -> {
+                        roleEntity.setPermissions(adminPermissions);
+                        adminRoles.add(roleEntity);
+                    }
+                    case "MANAGER" -> {
+                        roleEntity.setPermissions(managerPermissions);
+                        managerRoles.add(roleEntity);
+                    }
+                    case "USER" -> {
+                        roleEntity.setPermissions(userPermissions);
+                        userRoles.add(roleEntity);
+                    }
                 }
             });
 
-            if (userRepository.existsByEmail("admin@admin.com")) {
-                return;
+            if (!userRepository.existsByEmail("admin@admin.com")) {
+                User user = User.builder()
+                        .email("admin@admin.com")
+                        .password(passwordEncoder.encode("admin"))
+                        .roles(adminRoles)
+                        .firstName("admin")
+                        .lastName("admin")
+                        .banned(false)
+                        .build();
+
+                userRepository.save(user);
+
+                log.info("Created admin user with email and password admin@admin.com:admin");
             }
 
-            User user = User.builder()
-                    .email("admin@admin.com")
-                    .password(passwordEncoder.encode("admin"))
-                    .roles(adminRoles)
-                    .firstName("admin")
-                    .lastName("admin")
-                    .build();
+            if (!userRepository.existsByEmail("manager@manager.com")) {
+                User user = User.builder()
+                        .email("manager@manager.com")
+                        .password(passwordEncoder.encode("manager"))
+                        .roles(managerRoles)
+                        .firstName("manager")
+                        .lastName("manager")
+                        .banned(false)
+                        .build();
 
-            userRepository.save(user);
+                userRepository.save(user);
 
-            log.info("Created admin user with username and password admin:admin");
+                log.info("Created manager user with email and password manager@manager.com:manager");
+            }
+
+            if (!userRepository.existsByEmail("user@user.com")) {
+                User user = User.builder()
+                        .email("user@user.com")
+                        .password(passwordEncoder.encode("user"))
+                        .roles(userRoles)
+                        .firstName("user")
+                        .lastName("user")
+                        .banned(false)
+                        .build();
+
+                userRepository.save(user);
+
+                log.info("Created normal user with email and password user@user.com:user");
+            }
         };
     }
 }

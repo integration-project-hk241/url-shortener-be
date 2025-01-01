@@ -10,13 +10,11 @@ import org.url.urlshortenerbe.entities.Campaign;
 public interface CampaignRepository extends JpaRepository<Campaign, String> {
     boolean existsByIdAndUserId(String campaignId, String userId);
 
+    Page<Campaign> findAllByDeletedIs(boolean deleted, Pageable pageable);
+
+    Page<Campaign> findAllByUserIdAndDeletedIs(String userId, boolean deleted, Pageable pageable);
+
     Optional<Campaign> findByIdAndUserId(String campaignId, String userId);
 
     Optional<Campaign> findByNameAndUserId(String name, String userId);
-
-    Page<Campaign> findAllByDeletedIs(boolean deleted, Pageable pageable);
-
-    Page<Campaign> findAllByUserId(String userId, Pageable pageable);
-
-    void deleteByIdAndUserId(String campaignId, String userId);
 }

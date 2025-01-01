@@ -8,7 +8,6 @@ import org.url.urlshortenerbe.dtos.responses.CampaignResponse;
 import org.url.urlshortenerbe.dtos.responses.PageResponse;
 import org.url.urlshortenerbe.dtos.responses.Response;
 import org.url.urlshortenerbe.services.CampaignService;
-import org.url.urlshortenerbe.services.UrlService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -17,7 +16,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CampaignController {
     private final CampaignService campaignService;
-    private final UrlService urlService;
+
+    // The campaign controller doesn't have post endpoint because all campaigns must be created by manager not admin
+    // or anyone else
 
     // Admin view
     @GetMapping
