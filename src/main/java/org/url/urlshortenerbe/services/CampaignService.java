@@ -14,11 +14,13 @@ import org.url.urlshortenerbe.dtos.requests.CampaignUpdateRequest;
 import org.url.urlshortenerbe.dtos.responses.CampaignResponse;
 import org.url.urlshortenerbe.dtos.responses.PageResponse;
 import org.url.urlshortenerbe.entities.Campaign;
+import org.url.urlshortenerbe.entities.Url;
 import org.url.urlshortenerbe.entities.User;
 import org.url.urlshortenerbe.exceptions.AppException;
 import org.url.urlshortenerbe.exceptions.ErrorCode;
 import org.url.urlshortenerbe.mappers.CampaignMapper;
 import org.url.urlshortenerbe.repositories.CampaignRepository;
+import org.url.urlshortenerbe.repositories.UrlRepository;
 import org.url.urlshortenerbe.repositories.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -26,8 +28,9 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class CampaignService {
-    private final CampaignRepository campaignRepository;
     private final UserRepository userRepository;
+    private final CampaignRepository campaignRepository;
+    private final UrlRepository urlRepository;
 
     private final CampaignMapper campaignMapper;
 
@@ -147,6 +150,15 @@ public class CampaignService {
         Campaign campaign = campaignRepository
                 .findByIdAndUserId(campaignId, userId)
                 .orElseThrow(() -> new AppException(ErrorCode.CAMPAIGN_NOTFOUND));
+
+        if (campaignUpdateRequest.getEndDate().after(campaign.getEndDate())
+                || campaignUpdateRequest.getEndDate().before(campaign.getStartDate())) {
+            List<Url> urls = urlRepository.findAllByCampaignIdAndUserId(campaignId, userId);
+            urls.forEach(url -> {
+                url.setExpiresAt(campaignUpdateRequest.getEndDate());
+                urlRepository.save(url);
+            });
+        }
 
         campaignMapper.updateCampaign(campaign, campaignUpdateRequest);
 

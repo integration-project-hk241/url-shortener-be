@@ -54,4 +54,6 @@ public interface UrlRepository extends JpaRepository<Url, Integer> {
             @Param("userId") String userId,
             @Param("startDate") Date startDate,
             @Param("endDate") Date endDate);
+
+    List<Url> findAllByCampaignIdAndUserId(String campaignId, String userId);
 }
