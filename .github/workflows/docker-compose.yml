@@ -45,6 +45,6 @@ jobs:
       #          curl --fail http://localhost:8080 || exit 1
 
       # Step 7: Tear down the Docker Compose services after testing
-      - name: Stop Docker Compose
-        run: |
-          docker-compose -f compose.yaml down
+#      - name: Stop Docker Compose
+#        run: |
+#          docker-compose -f compose.yaml down
