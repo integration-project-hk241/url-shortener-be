@@ -5,15 +5,16 @@ spring:
   application:
     name: url-shortener-be
   datasource:
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
-    url: ${SPRING_DATASOURCE_URL}
+    username: ${DBMS_USERNAME:root}
+    password: ${DBMS_PASSWORD:root}
+    url: ${DBMS_URL:jdbc:mysql://localhost:3306/url}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: update
 
 jwt:
-  signer-key: ZpVU2+KjVQEFSU6NgV9+2SRzhT5YuIsXMDgTbDcrf3Y7O+W/bYzhDwVzZSOviQwdnzGMK91zo6tAsoS+px3lkJluXeMLr0MnbhWAx7KelaI=
+  signer-key: ${JWT_SIGNER-KEY:ZpVU2+KjVQEFSU6NgV9+2SRzhT5YuIsXMDgTbDcrf3Y7O+W/bYzhDwVzZSOviQwdnzGMK91zo6tAsoS+px3lkJluXeMLr0MnbhWAx7KelaI=}
   expiration-time: 3600 #second 1 hour
   refresh_time: 86400 #second 1 day
 

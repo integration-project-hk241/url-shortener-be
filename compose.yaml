@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: springboot_container
     ports:
-      - 8080:8080
+      - "8080:8080"
 #services:
 #  db:
 #    image: mysql:latest
