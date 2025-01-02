@@ -8,9 +8,22 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
     url: ${SPRING_DATASOURCE_URL}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+logging:
+  level:
+    org:
+      hibernate:
+        orm:
+          jdbc:
+            bind: trace
 
 jwt:
   signer-key: ZpVU2+KjVQEFSU6NgV9+2SRzhT5YuIsXMDgTbDcrf3Y7O+W/bYzhDwVzZSOviQwdnzGMK91zo6tAsoS+px3lkJluXeMLr0MnbhWAx7KelaI=

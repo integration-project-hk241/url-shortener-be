@@ -35,7 +35,7 @@ public interface UrlRepository extends JpaRepository<Url, Integer> {
             """
 		SELECT
 			u,
-			COUNT(c.id) AS clickCount
+			COUNT(c) AS clickCount
 		FROM
 			Url u
 		JOIN

@@ -102,6 +102,7 @@ public class UrlService {
         Url url = create(urlCreationRequest);
         url.setUser(user);
         url.setCampaign(campaign);
+        url.setExpiresAt(campaign.getEndDate());
 
         url = urlRepository.save(url);
 
@@ -437,23 +438,27 @@ public class UrlService {
         return user;
     }
 
-    public Response<List<Map<String, Object>>> getMostClickedUrlsByCampaign(
-            String campaignId, String userId, Date startDate, Date endDate) {
+    public Response<Map<Object, Object>> getMostClickedUrlsByCampaign(String campaignId, String userId) {
         User user = getCorrectUser(userId);
 
         if (null == user) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
-        if (!campaignRepository.existsById(campaignId)) {
-            throw new AppException(ErrorCode.CAMPAIGN_NOTFOUND);
-        }
+        Campaign campaign = campaignRepository
+                .findByIdAndUserId(campaignId, userId)
+                .orElseThrow(() -> new AppException(ErrorCode.URL_NOTFOUND));
 
         List<Object[]> result = urlRepository.findMostClickedUrlsByCampaignIdAndUserIdAndDateRange(
-                campaignId, userId, startDate, endDate);
+                campaignId, userId, campaign.getStartDate(), campaign.getEndDate());
+
+        int totalLinks = result.size();
+        int totalClickCount = 0;
+
+        Map<Object, Object> response = new HashMap<>();
 
         // Convert result to a more readable format
-        List<Map<String, Object>> response = new ArrayList<>();
+        List<Map<String, Object>> responseUrls = new ArrayList<>();
         for (Object[] row : result) {
             Url url = (Url) row[0];
             Long clickCount = (Long) row[1];
@@ -462,10 +467,16 @@ public class UrlService {
             data.put("url", urlMapper.toUrlResponse(url));
             data.put("clickCount", clickCount);
 
-            response.add(data);
+            totalClickCount += clickCount;
+
+            responseUrls.add(data);
         }
 
-        return Response.<List<Map<String, Object>>>builder()
+        response.put("totalClickCount", totalClickCount);
+        response.put("totalShortenedLinks", totalLinks);
+        response.put("urls", responseUrls);
+
+        return Response.<Map<Object, Object>>builder()
                 .success(true)
                 .data(response)
                 .build();

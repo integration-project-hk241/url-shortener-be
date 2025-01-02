@@ -1,13 +1,10 @@
 package org.url.urlshortenerbe.controller;
 
 import java.security.NoSuchAlgorithmException;
-import java.util.Date;
-import java.util.List;
 import java.util.Map;
 
 import jakarta.validation.Valid;
 
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import org.url.urlshortenerbe.dtos.requests.UrlCreationRequest;
 import org.url.urlshortenerbe.dtos.requests.UrlUpdateRequest;
@@ -81,11 +78,8 @@ public class UserCampaignUrlController {
     }
 
     @GetMapping("/stats")
-    public Response<List<Map<String, Object>>> getMostClickedUrlsByCampaign(
-            @PathVariable String userId,
-            @PathVariable String campaignId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date endDate) {
-        return urlService.getMostClickedUrlsByCampaign(campaignId, userId, startDate, endDate);
+    public Response<Map<Object, Object>> getMostClickedUrlsByCampaign(
+            @PathVariable String userId, @PathVariable String campaignId) {
+        return urlService.getMostClickedUrlsByCampaign(campaignId, userId);
     }
 }
