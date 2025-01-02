@@ -392,14 +392,15 @@ public class UrlService {
         String alias;
 
         // If the user want to custom the alias
-        if (urlCreationRequest.getAlias() != null) {
-            alias = urlCreationRequest.getAlias();
+        if (urlCreationRequest.getAlias() != null
+                && !urlCreationRequest.getAlias().trim().isEmpty()) {
+            alias = urlCreationRequest.getAlias().trim();
 
             if (urlRepository.existsByHash(alias)) {
                 throw new AppException(ErrorCode.ALIAS_EXISTED);
             }
         } else {
-            alias = generateHash(url.getLongUrl());
+            alias = generateHash(url.getLongUrl().trim());
 
             // Handle potential collisions
             while (urlRepository.existsByHash(alias)) {
