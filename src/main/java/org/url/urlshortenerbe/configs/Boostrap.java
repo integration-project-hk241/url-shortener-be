@@ -121,7 +121,6 @@ public class Boostrap {
                         userRoles.add(roleRepository.save(roleEntity));
                     }
                 }
-
             });
 
             if (!userRepository.existsByEmail("admin@admin.com")) {
