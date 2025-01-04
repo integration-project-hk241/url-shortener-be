@@ -110,19 +110,18 @@ public class Boostrap {
                 switch (role) {
                     case "ADMIN" -> {
                         roleEntity.setPermissions(adminPermissions);
-                        adminRoles.add(roleEntity);
+                        adminRoles.add(roleRepository.save(roleEntity));
                     }
                     case "MANAGER" -> {
                         roleEntity.setPermissions(managerPermissions);
-                        managerRoles.add(roleEntity);
+                        managerRoles.add(roleRepository.save(roleEntity));
                     }
                     case "USER" -> {
                         roleEntity.setPermissions(userPermissions);
-                        userRoles.add(roleEntity);
+                        userRoles.add(roleRepository.save(roleEntity));
                     }
                 }
 
-                roleRepository.save(roleEntity);
             });
 
             if (!userRepository.existsByEmail("admin@admin.com")) {
