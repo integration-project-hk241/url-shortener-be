@@ -1,5 +1,7 @@
 package org.url.urlshortenerbe.configs;
 
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -11,6 +13,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import lombok.RequiredArgsConstructor;
 
@@ -139,11 +144,11 @@ public class SecurityConfiguration {
         // Turn off csrf for development
         httpSecurity.csrf(AbstractHttpConfigurer::disable);
 
+        // Cors config
+        httpSecurity.cors(cors -> cors.configurationSource(corsConfigurationSource()));
+
         // Handle AccessDeniedHandler
         httpSecurity.exceptionHandling(exception -> exception.accessDeniedHandler(new CustomAccessDeniedHandler()));
-
-        httpSecurity.csrf(AbstractHttpConfigurer::disable);
-        httpSecurity.cors(AbstractHttpConfigurer::disable);
 
         return httpSecurity.build();
     }
@@ -164,17 +169,16 @@ public class SecurityConfiguration {
         return jwtAuthenticationConverter;
     }
 
-    //    @Bean
-    //    public CorsFilter corsFilter() {
-    //        CorsConfiguration corsConfiguration = new CorsConfiguration();
-    //
-    //        corsConfiguration.addAllowedOrigin("**");
-    //        corsConfiguration.addAllowedMethod("**");
-    //        corsConfiguration.addAllowedHeader("**");
-    //
-    //        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-    //        source.registerCorsConfiguration("/**", corsConfiguration);
-    //
-    //        return new CorsFilter(source);
-    //    }
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of("*")); // Specify your frontend origin
+        configuration.setAllowedMethods(List.of("*"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("*"));
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
 }
