@@ -26,6 +26,7 @@ import org.url.urlshortenerbe.exceptions.AppException;
 import org.url.urlshortenerbe.exceptions.ErrorCode;
 import org.url.urlshortenerbe.mappers.UrlMapper;
 import org.url.urlshortenerbe.repositories.CampaignRepository;
+import org.url.urlshortenerbe.repositories.ClickRepository;
 import org.url.urlshortenerbe.repositories.UrlRepository;
 import org.url.urlshortenerbe.repositories.UserRepository;
 import org.url.urlshortenerbe.utils.Base62Encoder;
@@ -43,9 +44,10 @@ public class UrlService {
     @Value("${url.expiration-time}")
     private int expirationTime;
 
-    private final UrlRepository urlRepository;
     private final UserRepository userRepository;
     private final CampaignRepository campaignRepository;
+    private final UrlRepository urlRepository;
+    private final ClickRepository clickRepository;
 
     private final UrlMapper urlMapper;
 
@@ -120,7 +122,11 @@ public class UrlService {
                 };
 
         List<UrlResponse> urlResponseList =
-                urls.getContent().stream().map(urlMapper::toUrlResponse).toList();
+                urls.getContent().stream().map(url -> {
+                    UrlResponse urlResponse = urlMapper.toUrlResponse(url);
+                    urlResponse.setClickCount(clickRepository.countByUrlId(url.getId()));
+                    return urlResponse;
+                }).toList();
 
         return PageResponse.<UrlResponse>builder()
                 .items(urlResponseList)
@@ -151,6 +157,13 @@ public class UrlService {
                     UrlResponse urlResponse = urlMapper.toUrlResponse(url);
                     urlResponse.setUserId(null);
                     urlResponse.setCampaignId(null);
+
+                    user.getRoles().forEach(role -> {
+                        if(role.getName().equals("MANAGER") || role.getName().equals("ADMIN")) {
+                            urlResponse.setClickCount(clickRepository.countByUrlId(url.getId()));
+                        }
+                    });
+
                     return urlResponse;
                 })
                 .toList();
@@ -187,6 +200,13 @@ public class UrlService {
                     UrlResponse urlResponse = urlMapper.toUrlResponse(url);
                     urlResponse.setCampaignId(null);
                     urlResponse.setUserId(null);
+
+                    user.getRoles().forEach(role -> {
+                        if(role.getName().equals("MANAGER") || role.getName().equals("ADMIN")) {
+                            urlResponse.setClickCount(clickRepository.countByUrlId(url.getId()));
+                        }
+                    });
+
                     return urlResponse;
                 })
                 .toList();
@@ -202,7 +222,10 @@ public class UrlService {
     public UrlResponse getOne(String hash) {
         Url url = getUrlByHash(hash);
 
-        return urlMapper.toUrlResponse(url);
+        UrlResponse urlResponse = urlMapper.toUrlResponse(url);
+        urlResponse.setClickCount(clickRepository.countByUrlId(url.getId()));
+
+        return urlResponse;
     }
 
     public UrlResponse getOneByHashAndUserId(String hash, String userId) {
@@ -216,11 +239,20 @@ public class UrlService {
                 .findByHashAndUserId(hash, userId)
                 .orElseThrow(() -> new AppException(ErrorCode.URL_NOTFOUND));
 
-        // set these 2 to null because we all know its user id and campaign id in the request already
-        url.setUser(null);
-        url.setCampaign(null);
+        UrlResponse urlResponse = urlMapper.toUrlResponse(url);
 
-        return urlMapper.toUrlResponse(url);
+        // set these 2 to null because we all know its user id and campaign id in the request already
+        urlResponse.setUserId(null);
+        urlResponse.setCampaignId(null);
+
+        user.getRoles().forEach(role -> {
+            if(role.getName().equals("MANAGER") || role.getName().equals("ADMIN")) {
+                urlResponse.setClickCount(clickRepository.countByUrlId(url.getId()));
+            }
+        });
+
+
+        return urlResponse;
     }
 
     public UrlResponse getOneByIdAndCampaignIdAndUserId(String hash, String campaignId, String userId) {
@@ -238,11 +270,18 @@ public class UrlService {
                 .findByHashAndCampaignIdAndUserId(hash, campaignId, userId)
                 .orElseThrow(() -> new AppException(ErrorCode.URL_NOTFOUND));
 
-        // set these 2 to null because we all know its user id and campaign id in the request already
-        url.setUser(null);
-        url.setCampaign(null);
+        UrlResponse urlResponse = urlMapper.toUrlResponse(url);
 
-        return urlMapper.toUrlResponse(url);
+        urlResponse.setUserId(null);
+        urlResponse.setCampaignId(null);
+
+        user.getRoles().forEach(role -> {
+            if(role.getName().equals("MANAGER") || role.getName().equals("ADMIN")) {
+                urlResponse.setClickCount(clickRepository.countByUrlId(url.getId()));
+            }
+        });
+
+        return urlResponse;
     }
 
     public UrlResponse update(String hash, UrlUpdateRequest urlUpdateRequest) {

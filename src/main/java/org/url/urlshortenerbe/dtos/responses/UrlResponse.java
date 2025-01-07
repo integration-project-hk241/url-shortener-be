@@ -28,4 +28,6 @@ public class UrlResponse {
     private String campaignId;
 
     private Boolean deleted;
+
+    private Integer clickCount;
 }
