@@ -512,7 +512,7 @@ public class UrlService {
     }
 
     public List<UrlResponse> searchForUrl(String q) {
-        Pageable pageable = PageRequest.of(0, 10);
+        Pageable pageable = PageRequest.of(0, 20);
         List<Url> urls = urlRepository.searchUrls(q, pageable);
 
         return urls.stream().map(urlMapper::toUrlResponse).toList();
@@ -525,7 +525,7 @@ public class UrlService {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
-        Pageable pageable = PageRequest.of(0, 10);
+        Pageable pageable = PageRequest.of(0, 20);
         List<Url> urls = urlRepository.searchUrlsWithinUserId(userId, q, pageable);
         return urls.stream().map(urlMapper::toUrlResponse).toList();
     }
@@ -541,7 +541,7 @@ public class UrlService {
             throw new AppException(ErrorCode.CAMPAIGN_NOTFOUND);
         }
 
-        Pageable pageable = PageRequest.of(0, 10);
+        Pageable pageable = PageRequest.of(0, 20);
         List<Url> urls = urlRepository.searchUrlsWithinUserIdAndCampaignId(userId, campaignId, q, pageable);
         return urls.stream().map(urlMapper::toUrlResponse).toList();
     }
