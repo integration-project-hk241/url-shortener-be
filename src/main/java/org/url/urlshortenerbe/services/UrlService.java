@@ -159,7 +159,7 @@ public class UrlService {
                     urlResponse.setCampaignId(null);
 
                     user.getRoles().forEach(role -> {
-                        if(role.getName().equals("MANAGER") || role.getName().equals("ADMIN")) {
+                        if (role.getName().equals("MANAGER") || role.getName().equals("ADMIN")) {
                             urlResponse.setClickCount(clickRepository.countByUrlId(url.getId()));
                         }
                     });
@@ -200,12 +200,7 @@ public class UrlService {
                     UrlResponse urlResponse = urlMapper.toUrlResponse(url);
                     urlResponse.setCampaignId(null);
                     urlResponse.setUserId(null);
-
-                    user.getRoles().forEach(role -> {
-                        if(role.getName().equals("MANAGER") || role.getName().equals("ADMIN")) {
-                            urlResponse.setClickCount(clickRepository.countByUrlId(url.getId()));
-                        }
-                    });
+                    urlResponse.setClickCount(clickRepository.countByUrlId(url.getId()));
 
                     return urlResponse;
                 })
@@ -246,7 +241,7 @@ public class UrlService {
         urlResponse.setCampaignId(null);
 
         user.getRoles().forEach(role -> {
-            if(role.getName().equals("MANAGER") || role.getName().equals("ADMIN")) {
+            if (role.getName().equals("MANAGER") || role.getName().equals("ADMIN")) {
                 urlResponse.setClickCount(clickRepository.countByUrlId(url.getId()));
             }
         });
@@ -274,12 +269,7 @@ public class UrlService {
 
         urlResponse.setUserId(null);
         urlResponse.setCampaignId(null);
-
-        user.getRoles().forEach(role -> {
-            if(role.getName().equals("MANAGER") || role.getName().equals("ADMIN")) {
-                urlResponse.setClickCount(clickRepository.countByUrlId(url.getId()));
-            }
-        });
+        urlResponse.setClickCount(clickRepository.countByUrlId(url.getId()));
 
         return urlResponse;
     }
