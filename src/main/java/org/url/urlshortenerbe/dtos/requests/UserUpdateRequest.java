@@ -13,8 +13,6 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserUpdateRequest {
-    @Size(min = 8, message = "Password must be at least 8 characters")
-    @NotBlank(message = "Password cannot be blank")
     private String password;
 
     @Size(min = 3, message = "Firstname must be at least 8 characters")

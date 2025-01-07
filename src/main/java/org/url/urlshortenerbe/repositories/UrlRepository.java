@@ -32,23 +32,64 @@ public interface UrlRepository extends JpaRepository<Url, Integer> {
 
     @Query(
             """
-		SELECT
-			u,
-			COUNT(c.id) AS clickCount
-		FROM
-			Url u
-		LEFT JOIN
-			Click c ON u.id = c.url.id
-		WHERE
-			u.campaign.id = :campaignId
-			AND u.user.id = :userId
-		GROUP BY
-			u.id
-		ORDER BY
-			clickCount DESC
-	""")
+						SELECT
+							u,
+							COUNT(c.id) AS clickCount
+						FROM
+							Url u
+						LEFT JOIN
+							Click c ON u.id = c.url.id
+						WHERE
+							u.campaign.id = :campaignId
+							AND u.user.id = :userId
+						GROUP BY
+							u.id
+						ORDER BY
+							clickCount DESC
+					""")
     List<Object[]> findMostClickedUrlsByCampaignIdAndUserId(
             @Param("campaignId") String campaignId, @Param("userId") String userId);
 
     List<Url> findAllByCampaignIdAndUserId(String campaignId, String userId);
+
+    @Query(
+            """
+			SELECT u
+			FROM
+				Url u
+			WHERE
+				LOWER(u.hash) LIKE LOWER(CONCAT('%', :q, '%'))
+				OR LOWER(u.longUrl) LIKE LOWER(CONCAT('%', :q, '%'))
+				OR LOWER(u.user.id) LIKE LOWER(CONCAT('%', :q, '%'))
+			""")
+    List<Url> searchUrls(String q, Pageable pageable);
+
+    @Query(
+            """
+			SELECT u
+			FROM
+				Url u
+			WHERE
+				u.user.id = :userId
+				AND (
+					LOWER(u.hash) LIKE LOWER(CONCAT('%', :q, '%'))
+					OR LOWER(u.longUrl) LIKE LOWER(CONCAT('%', :q, '%'))
+				)
+			""")
+    List<Url> searchUrlsWithinUserId(String userId, String q, Pageable pageable);
+
+    @Query(
+            """
+			SELECT u
+			FROM
+				Url u
+			WHERE
+				u.user.id = :userId
+				AND u.campaign.id = :campaignId
+				AND (
+					LOWER(u.hash) LIKE LOWER(CONCAT('%', :q, '%'))
+					OR LOWER(u.longUrl) LIKE LOWER(CONCAT('%', :q, '%'))
+				)
+			""")
+    List<Url> searchUrlsWithinUserIdAndCampaignId(String userId, String campaignId, String q, Pageable pageable);
 }

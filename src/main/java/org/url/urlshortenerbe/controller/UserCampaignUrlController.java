@@ -1,6 +1,7 @@
 package org.url.urlshortenerbe.controller;
 
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import java.util.Map;
 
 import jakarta.validation.Valid;
@@ -57,6 +58,21 @@ public class UserCampaignUrlController {
                 .build();
     }
 
+    @GetMapping("/search")
+    public Response<List<UrlResponse>> searchUrlsWithinUserId(
+            @PathVariable String userId, @PathVariable String campaignId, @RequestParam String q) {
+        return Response.<List<UrlResponse>>builder()
+                .success(true)
+                .data(urlService.searchUrlsWithinUserIdAndCampaignId(userId, campaignId, q))
+                .build();
+    }
+
+    @GetMapping("/stats")
+    public Response<Map<Object, Object>> getMostClickedUrlsByCampaign(
+            @PathVariable String userId, @PathVariable String campaignId) {
+        return urlService.getMostClickedUrlsByCampaign(campaignId, userId);
+    }
+
     @PutMapping("/{hash}")
     public Response<UrlResponse> updateOneByIdAndCampaignIdAndUserId(
             @PathVariable("userId") String userId,
@@ -75,11 +91,5 @@ public class UserCampaignUrlController {
         urlService.deleteOneByHashAndCampaignIdAndUserId(hash, campaignId, userId);
 
         return Response.<UrlResponse>builder().success(true).build();
-    }
-
-    @GetMapping("/stats")
-    public Response<Map<Object, Object>> getMostClickedUrlsByCampaign(
-            @PathVariable String userId, @PathVariable String campaignId) {
-        return urlService.getMostClickedUrlsByCampaign(campaignId, userId);
     }
 }

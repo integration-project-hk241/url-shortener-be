@@ -82,7 +82,7 @@ public class SecurityConfiguration {
 
                 // /urls endpoints
                 // The POST at /urls is already allowed in the list GET_PUBLIC_ENDPOINTS
-                .requestMatchers(HttpMethod.GET, API_PREFIX + "/urls")
+                .requestMatchers(HttpMethod.GET, API_PREFIX + "/urls/**")
                 .hasAuthority("MANAGE_URL")
                 .requestMatchers(HttpMethod.PUT, API_PREFIX + "/urls")
                 .hasAuthority("MANAGE_URL")

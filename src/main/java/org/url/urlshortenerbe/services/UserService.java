@@ -118,7 +118,9 @@ public class UserService {
         }
 
         userMapper.updateUser(user, userUpdateRequest);
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        if(!userUpdateRequest.getPassword().trim().isEmpty()){
+            user.setPassword(passwordEncoder.encode(userUpdateRequest.getPassword()));
+        }
 
         Set<Role> roleSet = new HashSet<>();
         userUpdateRequest.getRoles().forEach(role -> {

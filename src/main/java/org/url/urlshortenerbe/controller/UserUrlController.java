@@ -1,6 +1,7 @@
 package org.url.urlshortenerbe.controller;
 
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 
 import jakarta.validation.Valid;
 
@@ -47,6 +48,14 @@ public class UserUrlController {
         return Response.<UrlResponse>builder()
                 .success(true)
                 .data(urlService.getOneByHashAndUserId(hash, userId))
+                .build();
+    }
+
+    @GetMapping("/search")
+    public Response<List<UrlResponse>> searchUrlsWithinUserId(@PathVariable String userId, @RequestParam String q) {
+        return Response.<List<UrlResponse>>builder()
+                .success(true)
+                .data(urlService.searchUrlsWithinUserId(userId, q))
                 .build();
     }
 
