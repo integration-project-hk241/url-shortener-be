@@ -121,12 +121,13 @@ public class UrlService {
                     default -> urlRepository.findAll(pageable);
                 };
 
-        List<UrlResponse> urlResponseList =
-                urls.getContent().stream().map(url -> {
+        List<UrlResponse> urlResponseList = urls.getContent().stream()
+                .map(url -> {
                     UrlResponse urlResponse = urlMapper.toUrlResponse(url);
                     urlResponse.setClickCount(clickRepository.countByUrlId(url.getId()));
                     return urlResponse;
-                }).toList();
+                })
+                .toList();
 
         return PageResponse.<UrlResponse>builder()
                 .items(urlResponseList)
@@ -245,7 +246,6 @@ public class UrlService {
                 urlResponse.setClickCount(clickRepository.countByUrlId(url.getId()));
             }
         });
-
 
         return urlResponse;
     }
@@ -475,12 +475,11 @@ public class UrlService {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
-        Campaign campaign = campaignRepository
-                .findByIdAndUserId(campaignId, userId)
-                .orElseThrow(() -> new AppException(ErrorCode.URL_NOTFOUND));
+        if(!campaignRepository.existsByIdAndUserId(campaignId, userId)) {
+            throw new AppException(ErrorCode.CAMPAIGN_NOTFOUND);
+        }
 
-        List<Object[]> result = urlRepository.findMostClickedUrlsByCampaignIdAndUserIdAndDateRange(
-                campaignId, userId, campaign.getStartDate(), campaign.getEndDate());
+        List<Object[]> result = urlRepository.findMostClickedUrlsByCampaignIdAndUserId(campaignId, userId);
 
         int totalLinks = result.size();
         int totalClickCount = 0;

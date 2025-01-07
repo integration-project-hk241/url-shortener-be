@@ -1,6 +1,5 @@
 package org.url.urlshortenerbe.repositories;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,25 +34,21 @@ public interface UrlRepository extends JpaRepository<Url, Integer> {
             """
 		SELECT
 			u,
-			COUNT(c) AS clickCount
+			COUNT(c.id) AS clickCount
 		FROM
 			Url u
-		JOIN
+		LEFT JOIN
 			Click c ON u.id = c.url.id
 		WHERE
 			u.campaign.id = :campaignId
 			AND u.user.id = :userId
-			AND c.clickedAt BETWEEN :startDate AND :endDate
 		GROUP BY
 			u.id
 		ORDER BY
 			clickCount DESC
 	""")
-    List<Object[]> findMostClickedUrlsByCampaignIdAndUserIdAndDateRange(
-            @Param("campaignId") String campaignId,
-            @Param("userId") String userId,
-            @Param("startDate") Date startDate,
-            @Param("endDate") Date endDate);
+    List<Object[]> findMostClickedUrlsByCampaignIdAndUserId(
+            @Param("campaignId") String campaignId, @Param("userId") String userId);
 
     List<Url> findAllByCampaignIdAndUserId(String campaignId, String userId);
 }
