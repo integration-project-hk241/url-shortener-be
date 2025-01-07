@@ -37,6 +37,7 @@ public class RoleService {
     public RoleResponse create(RoleCreationRequest roleCreationRequest) {
         Role role = roleMapper.toRole(roleCreationRequest);
         role.setName(role.getName().toUpperCase().replace("-", "_"));
+        role.setPermissions(new HashSet<>());
 
         Set<PermissionResponse> permissionResponseSet = new HashSet<>();
 
@@ -45,9 +46,8 @@ public class RoleService {
                     .findById(permission.toUpperCase().replace("-", "_"))
                     .orElseThrow(() -> new AppException(ErrorCode.PERMISSION_NOTFOUND));
 
-            PermissionResponse permissionResponse = permissionMapper.toPermissionResponse(permissionEntity);
-
-            permissionResponseSet.add(permissionResponse);
+            role.getPermissions().add(permissionEntity);
+            permissionResponseSet.add(permissionMapper.toPermissionResponse(permissionEntity));
         });
 
         RoleResponse roleResponse = roleMapper.toRoleResponse(roleRepository.save(role));
