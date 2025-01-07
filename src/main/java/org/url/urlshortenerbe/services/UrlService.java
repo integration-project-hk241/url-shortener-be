@@ -16,14 +16,16 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.url.urlshortenerbe.dtos.requests.UrlCreationRequest;
 import org.url.urlshortenerbe.dtos.requests.UrlUpdateRequest;
+import org.url.urlshortenerbe.dtos.responses.ClickResponse;
 import org.url.urlshortenerbe.dtos.responses.PageResponse;
-import org.url.urlshortenerbe.dtos.responses.Response;
 import org.url.urlshortenerbe.dtos.responses.UrlResponse;
 import org.url.urlshortenerbe.entities.Campaign;
+import org.url.urlshortenerbe.entities.Click;
 import org.url.urlshortenerbe.entities.Url;
 import org.url.urlshortenerbe.entities.User;
 import org.url.urlshortenerbe.exceptions.AppException;
 import org.url.urlshortenerbe.exceptions.ErrorCode;
+import org.url.urlshortenerbe.mappers.ClickMapper;
 import org.url.urlshortenerbe.mappers.UrlMapper;
 import org.url.urlshortenerbe.repositories.CampaignRepository;
 import org.url.urlshortenerbe.repositories.ClickRepository;
@@ -50,6 +52,7 @@ public class UrlService {
     private final ClickRepository clickRepository;
 
     private final UrlMapper urlMapper;
+    private final ClickMapper clickMapper;
 
     private final Base62Encoder base62Encoder;
 
@@ -468,7 +471,7 @@ public class UrlService {
         return user;
     }
 
-    public Response<Map<Object, Object>> getMostClickedUrlsByCampaign(String campaignId, String userId) {
+    public Map<Object, Object> getMostClickedUrlsByCampaign(String campaignId, String userId) {
         User user = getCorrectUser(userId);
 
         if (null == user) {
@@ -505,10 +508,7 @@ public class UrlService {
         response.put("totalShortenedLinks", totalLinks);
         response.put("urls", responseUrls);
 
-        return Response.<Map<Object, Object>>builder()
-                .success(true)
-                .data(response)
-                .build();
+        return response;
     }
 
     public List<UrlResponse> searchForUrl(String q) {
@@ -544,5 +544,33 @@ public class UrlService {
         Pageable pageable = PageRequest.of(0, 20);
         List<Url> urls = urlRepository.searchUrlsWithinUserIdAndCampaignId(userId, campaignId, q, pageable);
         return urls.stream().map(urlMapper::toUrlResponse).toList();
+    }
+
+    public PageResponse<ClickResponse> getClicks(String userId, String campaignId, String hash, Pageable pageable) {
+        User user = getCorrectUser(userId);
+
+        if (null == user) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
+        if (!campaignRepository.existsByIdAndUserId(campaignId, userId)) {
+            throw new AppException(ErrorCode.CAMPAIGN_NOTFOUND);
+        }
+
+        if (!urlRepository.existsByHashAndCampaignIdAndUserId(hash, campaignId, userId)) {
+            throw new AppException(ErrorCode.URL_NOTFOUND);
+        }
+
+        Page<Click> clicks = clickRepository.findAllByHashAndCampaignIdAndUserId(hash, campaignId, userId, pageable);
+
+        List<ClickResponse> clickResponses =
+                clicks.getContent().stream().map(clickMapper::toResponse).toList();
+
+        return PageResponse.<ClickResponse>builder()
+                .items(clickResponses)
+                .page(pageable.getPageNumber() + 1)
+                .records(clicks.getTotalElements())
+                .totalPages(clicks.getTotalPages())
+                .build();
     }
 }

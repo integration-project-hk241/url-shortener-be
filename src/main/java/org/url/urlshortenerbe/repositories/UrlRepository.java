@@ -92,4 +92,6 @@ public interface UrlRepository extends JpaRepository<Url, Integer> {
 				)
 			""")
     List<Url> searchUrlsWithinUserIdAndCampaignId(String userId, String campaignId, String q, Pageable pageable);
+
+    boolean existsByHashAndCampaignIdAndUserId(String hash, String campaignId, String userId);
 }

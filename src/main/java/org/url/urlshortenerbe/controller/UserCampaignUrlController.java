@@ -6,9 +6,11 @@ import java.util.Map;
 
 import jakarta.validation.Valid;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 import org.url.urlshortenerbe.dtos.requests.UrlCreationRequest;
 import org.url.urlshortenerbe.dtos.requests.UrlUpdateRequest;
+import org.url.urlshortenerbe.dtos.responses.ClickResponse;
 import org.url.urlshortenerbe.dtos.responses.PageResponse;
 import org.url.urlshortenerbe.dtos.responses.Response;
 import org.url.urlshortenerbe.dtos.responses.UrlResponse;
@@ -70,7 +72,23 @@ public class UserCampaignUrlController {
     @GetMapping("/stats")
     public Response<Map<Object, Object>> getMostClickedUrlsByCampaign(
             @PathVariable String userId, @PathVariable String campaignId) {
-        return urlService.getMostClickedUrlsByCampaign(campaignId, userId);
+        return Response.<Map<Object, Object>>builder()
+                .success(true)
+                .data(urlService.getMostClickedUrlsByCampaign(userId, campaignId))
+                .build();
+    }
+
+    @GetMapping("/{hash}/clicks")
+    public Response<PageResponse<ClickResponse>> getClicksOfUrls(
+            @PathVariable String userId,
+            @PathVariable String campaignId,
+            @PathVariable String hash,
+            @RequestParam(defaultValue = "1", required = false) int page,
+            @RequestParam(defaultValue = "10", required = false) int size) {
+        return Response.<PageResponse<ClickResponse>>builder()
+                .success(true)
+                .data(urlService.getClicks(userId, campaignId, hash, PageRequest.of(page - 1, size)))
+                .build();
     }
 
     @PutMapping("/{hash}")
