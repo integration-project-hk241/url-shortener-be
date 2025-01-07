@@ -99,7 +99,7 @@ public class SecurityConfiguration {
                 // /users/{userId}/urls for normal user, manager and admin
                 .requestMatchers(HttpMethod.POST, API_PREFIX + "/users/{userId}/urls")
                 .hasAnyAuthority("CREATE_URL", "MANAGE_URL")
-                .requestMatchers(HttpMethod.GET, API_PREFIX + "/users/{userId}/urls")
+                .requestMatchers(HttpMethod.GET, API_PREFIX + "/users/{userId}/url/**")
                 .hasAnyAuthority("READ_URL", "MANAGE_URL")
                 .requestMatchers(HttpMethod.PUT, API_PREFIX + "/users/{userId}/urls")
                 .hasAnyAuthority("UPDATE_URL", "MANAGE_URL")
@@ -115,7 +115,7 @@ public class SecurityConfiguration {
                 .requestMatchers(
                         HttpMethod.GET,
                         API_PREFIX + "/users/{userId}/campaigns",
-                        API_PREFIX + "/users/{userId}/campaigns/{campaignId}/urls",
+                        API_PREFIX + "/users/{userId}/campaigns/{campaignId}/urls/**",
                         // Where to get the stats of url within a campaign
                         API_PREFIX + "/users/{userId}/campaigns/{campaignId}/urls/stats")
                 .hasAnyAuthority("READ_CAMPAIGN", "MANAGE_CAMPAIGN")
