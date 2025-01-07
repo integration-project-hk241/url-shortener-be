@@ -537,7 +537,7 @@ public class UrlService {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
-        if(!campaignRepository.existsByIdAndUserId(campaignId, userId)) {
+        if (!campaignRepository.existsByIdAndUserId(campaignId, userId)) {
             throw new AppException(ErrorCode.CAMPAIGN_NOTFOUND);
         }
 

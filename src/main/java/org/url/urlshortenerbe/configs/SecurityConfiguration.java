@@ -114,7 +114,7 @@ public class SecurityConfiguration {
                 .hasAnyAuthority("CREATE_CAMPAIGN", "MANAGE_CAMPAIGN")
                 .requestMatchers(
                         HttpMethod.GET,
-                        API_PREFIX + "/users/{userId}/campaigns",
+                        API_PREFIX + "/users/{userId}/campaigns/**",
                         API_PREFIX + "/users/{userId}/campaigns/{campaignId}/urls/**",
                         // Where to get the stats of url within a campaign
                         API_PREFIX + "/users/{userId}/campaigns/{campaignId}/urls/stats")

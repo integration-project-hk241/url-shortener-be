@@ -1,5 +1,7 @@
 package org.url.urlshortenerbe.controller;
 
+import java.util.List;
+
 import jakarta.validation.Valid;
 
 import org.springframework.web.bind.annotation.*;
@@ -43,11 +45,11 @@ public class UserCampaignController {
 
     // Campaign manager view for getting campaign by name and user id
     @GetMapping("/search")
-    public Response<CampaignResponse> getCampaignWithUserIdAndName(
+    public Response<List<CampaignResponse>> getCampaignWithUserIdAndName(
             @PathVariable String userId, @RequestParam String name) {
-        return Response.<CampaignResponse>builder()
+        return Response.<List<CampaignResponse>>builder()
                 .success(true)
-                .data(campaignService.getOneByUserIdAndName(userId, name))
+                .data(campaignService.searchCampaignByNameWithinUserId(userId, name))
                 .build();
     }
 

@@ -118,7 +118,7 @@ public class UserService {
         }
 
         userMapper.updateUser(user, userUpdateRequest);
-        if(!userUpdateRequest.getPassword().trim().isEmpty()){
+        if (!userUpdateRequest.getPassword().trim().isEmpty()) {
             user.setPassword(passwordEncoder.encode(userUpdateRequest.getPassword()));
         }
 

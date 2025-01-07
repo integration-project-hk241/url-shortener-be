@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -97,18 +98,17 @@ public class CampaignService {
         return campaignMapper.toCampaignResponse(campaign);
     }
 
-    public CampaignResponse getOneByUserIdAndName(String userId, String name) {
+    public List<CampaignResponse> searchCampaignByNameWithinUserId(String userId, String name) {
         User user = getCorrectUser(userId);
 
         if (null == user) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
-        Campaign campaign = campaignRepository
-                .findByNameAndUserId(name, userId)
-                .orElseThrow(() -> new AppException(ErrorCode.CAMPAIGN_NOTFOUND));
+        Pageable pageable = PageRequest.of(0, 20);
+        List<Campaign> campaigns = campaignRepository.searchCampaignsByNameWithinUserId(name, userId, pageable);
 
-        return campaignMapper.toCampaignResponse(campaign);
+        return campaigns.stream().map(campaignMapper::toCampaignResponse).toList();
     }
 
     public PageResponse<CampaignResponse> getAllByUserId(String userId, int page, int size, String type) {
