@@ -28,7 +28,7 @@ public class CampaignController {
             @RequestParam(defaultValue = "not_deleted", required = false) String type) {
         return Response.<PageResponse<CampaignResponse>>builder()
                 .success(true)
-                .data(campaignService.getAll(page - 1, size, type))
+                .data(campaignService.getAll(page, size, type))
                 .build();
     }
 

@@ -36,7 +36,7 @@ public class CampaignService {
     private final CampaignMapper campaignMapper;
 
     public PageResponse<CampaignResponse> getAll(int page, int size, String type) {
-        PageRequest pageRequest = PageRequest.of(page, size);
+        PageRequest pageRequest = PageRequest.of(page - 1, size);
 
         Page<Campaign> campaigns =
                 switch (type) {
