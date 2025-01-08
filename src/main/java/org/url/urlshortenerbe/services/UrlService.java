@@ -471,7 +471,7 @@ public class UrlService {
         return user;
     }
 
-    public Map<Object, Object> getMostClickedUrlsByCampaign(String campaignId, String userId) {
+    public Map<Object, Object> getMostClickedUrlsByCampaign(String userId, String campaignId) {
         User user = getCorrectUser(userId);
 
         if (null == user) {
